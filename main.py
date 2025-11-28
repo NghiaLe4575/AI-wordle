@@ -1,10 +1,10 @@
 import tkinter as tk
-from engine import WordleEngine
-from graphic import WordleUI
+from engine.engine import WordleEngine
+from ui.graphic import WordleUI
 
 def main():
 
-    engine = WordleEngine("words.txt")
+    engine = WordleEngine("./data/words.txt")
 
     root = tk.Tk()
     app = WordleUI(root, engine)
