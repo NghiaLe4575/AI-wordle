@@ -121,7 +121,7 @@ Cost represents how "good" a guess is. Lower cost paths are explored first in UC
 | Function | Formula | Range | When Low | Use Case |
 |----------|---------|-------|----------|----------|
 | **Constant** | 1.0 | 1.0 | Always | BFS/DFS baseline. All guesses equal priority. |
-| **Reduction** | 1.0 + (after/before) | [1.0, 2.0] | Eliminates many words | UCS prefers aggressive filtering. Fast initial pruning. |
+| **Reduction(recommended)** | 1.0 + (after/before) | [1.0, 2.0] | Eliminates many words | UCS prefers aggressive filtering. Fast initial pruning. |
 | **Partition** | 1.0 + (largest_partition/before) | [1.0, 2.0] | Partitions balanced | UCS avoids large clusters. Reduces worst-case remaining. |
 | **Entropy** | 2.0 - (entropy/max_entropy) | [1.0, 2.0] | Maximizes info gain | A* achieves 3.43 avg guesses. Most informed. |
 
