@@ -112,25 +112,20 @@ Eight algorithms combining 2 search strategies × 4 cost functions:
 
 ---
 
+
+
 ## Cost Functions
 
 Cost represents how "good" a guess is. Lower cost paths are explored first in UCS/A*.
 
-### Constant Cost
+| Function | Formula | Range | When Low | Use Case |
+|----------|---------|-------|----------|----------|
+| **Constant** | 1.0 | 1.0 | Always | BFS/DFS baseline. All guesses equal priority. |
+| **Reduction** | 1.0 + (after/before) | [1.0, 2.0] | Eliminates many words | UCS prefers aggressive filtering. Fast initial pruning. |
+| **Partition** | 1.0 + (largest_partition/before) | [1.0, 2.0] | Partitions balanced | UCS avoids large clusters. Reduces worst-case remaining. |
+| **Entropy** | 2.0 - (entropy/max_entropy) | [1.0, 2.0] | Maximizes info gain | A* achieves 3.43 avg guesses. Most informed. |
 
-Cost = 1.0 for all guesses. Treats all guesses equally. Used with BFS/DFS baseline.
-
-### Reduction Cost
-
-Cost = 1.0 + (remaining_words_after / words_before). Ranges [1.0, 2.0]. Low cost when guess eliminates many candidates. Prefers aggressive filtering.
-
-### Partition Cost
-
-Cost = 1.0 + (largest_partition / words_before). Ranges [1.0, 2.0]. Partitions feedback patterns among remaining words. Low cost when partition is balanced. Avoids worst-case large clusters.
-
-### Entropy Cost
-
-Cost = 2.0 - (entropy / max_entropy). Entropy = sum of P(pattern) × log2(partition_size) over all feedback patterns. Max entropy = log2(total_words). Low cost maximizes information gain. Most informed choice, achieves optimal performance.
+Where: `entropy = Σ P(pattern) × log2(partition_size)` over feedback patterns; `max_entropy = log2(total_words)`
 
 ---
 
@@ -138,53 +133,18 @@ Cost = 2.0 - (entropy / max_entropy). Entropy = sum of P(pattern) × log2(partit
 
 Heuristics estimate remaining cost for A*. Used in priority: `depth + heuristic`.
 
-### Log2 Heuristic
+| Function | Estimate | Range | Intuition | Bound |
+|----------|----------|-------|-----------|-------|
+| **Log2** | log2(remaining) | [0, 12.5] | Each guess halves search (best case) | Optimistic |
+| **Partition** | log2(largest_partition) | [0, 12.5] | End in largest partition (worst case) | Tighter |
+| **Entropy** | (entropy/max_entropy) × log2(remaining) | [0, 12.5] | Weight by actual info available | Tightest |
 
-Estimate = log2(remaining_candidates). Based on information theory: best case each guess halves search space. Always admits (underestimates true cost).
-
-### Partition Heuristic
-
-Estimate = log2(largest_partition). Pessimistic: worst case the next guess leaves all candidates in the largest partition. Tighter bound when partitions are unbalanced.
-
-### Entropy Heuristic
-
-Estimate = (entropy / max_entropy) × log2(remaining). Weights log2 estimate by actual information available. Most informed, tightest bound.
-
-**Admissibility:** All heuristics satisfy h(state) ≤ true_cost_to_goal, guaranteeing A* optimality.
+**Admissibility:** All satisfy h(state) ≤ true_cost_to_goal, guaranteeing A* optimality.
 
 ---
 
-## Benchmark Results
-
-Tested on 5,717-word dictionary, 20 random test words:
-
-| Algorithm | Success Rate | Avg Guesses | Avg Expanded | Avg Time |
-|-----------|--------------|-------------|--------------|----------|
-| A*-Entropy | 100% | 3.43 ± 0.51 | 1,234 | 0.287s |
-| A*-Log2 | 100% | 3.51 ± 0.48 | 1,876 | 0.342s |
-| UCS-Entropy | 100% | 3.54 ± 0.49 | 2,100 | 0.412s |
-| UCS-Partition | 100% | 3.55 ± 0.50 | 2,234 | 0.428s |
-| UCS-Reduction | 100% | 3.58 ± 0.52 | 2,456 | 0.456s |
-| UCS-Constant | 100% | 3.81 ± 0.61 | 4,521 | 0.847s |
-| BFS | 100% | 3.82 ± 0.62 | 4,521 | 0.847s |
-| DFS | 100% | 3.95 ± 0.71 | 5,234 | 1.023s |
-
-**Key Finding:** Entropy-based cost + A* heuristic achieves 3.43 average guesses, near-optimal Wordle performance (theoretical optimal ≈ 3.42).
-
 ---
 
-## Running Benchmarks
-
-**GUI:** Launch main.py, click Benchmark button. Results print to console.
-
-**Metrics Tracked:**
-- Success rate across test set
-- Average, min, max guesses per word
-- Average expanded nodes (search efficiency)
-- Average generated nodes (total work)
-- Average execution time
-
----
 
 ## Key Insights
 
@@ -199,13 +159,3 @@ Tested on 5,717-word dictionary, 20 random test words:
 **Frontier Management:** A* with good heuristic keeps frontier small (peak ~1,234 states vs. BFS ~4,521).
 
 ---
-
-## Performance Profile
-
-- **Dictionary:** 5,717 words
-- **Avg Guesses:** 3.43 (A*-Entropy)
-- **Expanded Nodes:** ~1,234 per puzzle
-- **Memory Peak:** ~28 MB (frontier + feedback table)
-- **Time per Puzzle:** ~0.287s
-
-Scales linearly with dictionary size. A* dominates larger dictionaries.
