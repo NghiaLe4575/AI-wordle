@@ -4,7 +4,7 @@ from ui.graphic import WordleUI
 
 def main():
 
-    engine = WordleEngine("./data/words.txt")
+    engine = WordleEngine("./data/words_max.txt")
 
     root = tk.Tk()
     app = WordleUI(root, engine)

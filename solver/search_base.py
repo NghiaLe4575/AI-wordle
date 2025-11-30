@@ -71,7 +71,9 @@ class OptimizedGraphSearchSolver:
     ) -> SolverResult:
 
         if starting_candidates is None:
-            starting_candidates = random.sample(list(word_pool), min(30, len(word_pool)))
+            # Sort alphabetically or by letter frequency
+            sorted_candidates = sorted(word_pool)[:10]
+            starting_candidates = sorted_candidates
 
         # prepare shared feedback table (cached file)
         if OptimizedGraphSearchSolver._shared_feedback_table is None or OptimizedGraphSearchSolver._shared_word_list != list(word_pool):
