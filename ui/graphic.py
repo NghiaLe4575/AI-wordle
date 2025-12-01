@@ -1,3 +1,5 @@
+# ui/graphic.py - Add this to your existing file
+
 import tkinter as tk
 from tkinter import ttk
 import threading
@@ -405,6 +407,7 @@ class WordleUI:
         for btn in self.key_buttons.values():
             btn.config(bg=COLORS['key_default'], fg=COLORS['key_text'])
 
+    # --- SOLVER INTEGRATION ---
     # --- SOLVER INTEGRATION ---
     def run_solver(self, strategy):
         if self.engine.game_over or self.is_review_mode:
