@@ -61,13 +61,13 @@ def _build_registry() -> Dict[str, OptimizedGraphSearchSolver]:
     registry["dfs-opt"] = OptimizedDFS(max_branching=30)
     # UCS variants
     for cost_name in ["constant", "reduction", "partition", "entropy"]:
-        r = OptimizedUCS(max_branching=30, cost_fn=cost_name)
+        r = OptimizedUCS(max_branching=2000, cost_fn=cost_name)
         r.name = f"ucs-{cost_name}"
         registry[r.name] = r
     # A* variants
     for cost_name in ["constant", "reduction", "partition", "entropy"]:
         for heuristic_name in ["log2", "partition"]:
-            r = OptimizedAStar(max_branching=30, cost_fn=cost_name, heuristic_fn=heuristic_name)
+            r = OptimizedAStar(max_branching=2000, cost_fn=cost_name, heuristic_fn=heuristic_name)
             r.name = f"astar-{cost_name}-{heuristic_name}"
             registry[r.name] = r
     return registry
