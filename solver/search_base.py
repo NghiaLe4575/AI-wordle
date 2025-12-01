@@ -164,6 +164,8 @@ class OptimizedGraphSearchSolver:
             cand = list(self.starting_candidates_indices & possible_indices)
         else:
             cand = list(possible_indices)
+            random.shuffle(cand)
+
         if len(cand) <= self.max_branching:
             return cand
         return cand[: self.max_branching]

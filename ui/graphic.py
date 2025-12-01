@@ -211,7 +211,7 @@ class WordleUI:
                 answer=self.engine.secret_word,
                 word_pool=self.engine.word_list,
                 max_attempts=self.engine.max_guesses,
-                starting_candidates=self.starting_candidates
+                starting_candidates=self.engine.word_list
             )
 
             # Animate each guess on the UI thread
@@ -253,18 +253,18 @@ class WordleUI:
             solver_configs = {
                 "BFS": "bfs-opt",
                 "DFS": "dfs-opt",
-                "UCS-Const": "ucs-constant",
+                #"UCS-Const": "ucs-constant",
                 "UCS-Red": "ucs-reduction",
-                "UCS-Part": "ucs-partition",
-                "UCS-Ent": "ucs-entropy",
-                "A*-Const-Log2": "astar-constant-log2",
+                #"UCS-Part": "ucs-partition",
+                #"UCS-Ent": "ucs-entropy",
+                #"A*-Const-Log2": "astar-constant-log2",
                 "A*-Red-Log2": "astar-reduction-log2",
-                "A*-Const-Partition": "astar-reduction-partition",
+                #"A*-Const-Partition": "astar-constant-partition",
                 "A*-Red-Partition": "astar-reduction-partition",
 
             }
             
-            num_tests = 20  # Number of random test cases
+            num_tests = 10  # Number of random test cases
             test_answers = random.sample(self.engine.word_list, min(num_tests, len(self.engine.word_list)))
             
             print("\n" + "="*80)
