@@ -194,7 +194,8 @@ class OptimizedGraphSearchSolver:
         
         # Convert to list for indexing
         candidates = list(possible_indices)
-        
+        if attempt != 0: random.shuffle(candidates)
+
         # If only one candidate left, guess it
         if len(candidates) == 1:
             return candidates[0], inference_count
