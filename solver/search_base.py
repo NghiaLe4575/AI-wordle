@@ -69,7 +69,13 @@ class OptimizedGraphSearchSolver:
         max_attempts: int = 6,
         starting_candidates: Optional[Sequence[str]] = None
     ) -> SolverResult:
-
+        """
+        Solve Wordle WITHOUT peeking at the answer during search.
+        
+        The solver explores hypothetical feedback patterns and only receives
+        real feedback when a guess is committed (simulated here by checking
+        against answer AFTER the guess is chosen, not during expansion).
+        """
         if starting_candidates is None:
             starting_candidates = random.sample(list(word_pool), min(30, len(word_pool)))
 
@@ -84,99 +90,147 @@ class OptimizedGraphSearchSolver:
         word_list = OptimizedGraphSearchSolver._shared_word_list
         feedback_table = OptimizedGraphSearchSolver._shared_feedback_table
         word_to_idx = {w.lower(): i for i, w in enumerate(word_list)}
-        answer_idx = word_to_idx[answer.lower()]
+        answer_lower = answer.lower()
 
         self.starting_candidates_indices = {
             word_to_idx[w.lower()] for w in starting_candidates if w.lower() in word_to_idx
         }
 
-        root_state = CompactState.from_history(tuple(), len(word_list))
-
-        frontier = self._create_frontier()
-        seq = 0
-        self._push_frontier(frontier, root_state, tuple(), set(range(len(word_list))), 0.0, seq)
-        seq += 1
-
-        visited: set[CompactState] = set()
+        # Metrics
         expanded_nodes = 0
         generated_nodes = 0
-        frontier_max = 1
+        inference_ops = 0
         explored_words: list[str] = []
+        expanded_order = []
 
-        expanded_order = []        ### PATCH ADDED ###
+        # Current game state: list of (guess, feedback) after each committed guess
+        committed_history: list[tuple[str, Feedback]] = []
+        # Candidates still possible given committed history
+        possible_indices: set[int] = set(range(len(word_list)))
 
-        while not self._frontier_empty(frontier):
-            state, history, possible_indices, depth = self._pop_frontier(frontier)
-
-            if state in visited:
-                continue
-            visited.add(state)
-
+        for attempt in range(max_attempts):
+            # === SELECTION PHASE: Pick the best guess using search (no peeking) ===
+            best_guess_idx, search_inferences = self._select_best_guess(
+                possible_indices, 
+                word_list, 
+                feedback_table, 
+                attempt
+            )
+            inference_ops += search_inferences
             expanded_nodes += 1
-            expanded_order.append(state)   ### PATCH ADDED ###
+            
+            if best_guess_idx is None:
+                # No valid guess found
+                break
+                
+            guess = word_list[best_guess_idx]
+            if guess not in explored_words:
+                explored_words.append(guess)
+            
+            generated_nodes += 1
 
-            # goal check
-            if history and word_to_idx[history[-1][0].lower()] == answer_idx:
-                final_path = [g for g,_ in history]
+            # === COMMIT PHASE: Now we "play" the guess and get real feedback ===
+            real_feedback = feedback_table.get_feedback(guess, answer)
+            inference_ops += 1
+            
+            committed_history.append((guess, real_feedback))
+            expanded_order.append(CompactState.from_history(tuple(committed_history), len(possible_indices)))
+
+            # Check if solved
+            if guess.lower() == answer_lower:
                 return SolverResult(
-                    True, history, expanded_nodes, generated_nodes, frontier_max,
-                    explored_words, final_path, list(self.starting_candidates_indices),
-                    expanded_order                        ### PATCH ADDED ###
+                    True, tuple(committed_history), inference_ops, 
+                    generated_nodes, len(possible_indices),
+                    explored_words, [g for g, _ in committed_history], 
+                    list(self.starting_candidates_indices), expanded_order
                 )
 
-            if depth >= max_attempts:
-                continue
+            # === UPDATE PHASE: Filter candidates based on real feedback ===
+            new_possible: set[int] = set()
+            for idx in possible_indices:
+                target = word_list[idx]
+                hypo_fb = feedback_table.get_feedback(guess, target)
+                inference_ops += 1
+                if hypo_fb == real_feedback:
+                    new_possible.add(idx)
+            
+            possible_indices = new_possible
+            
+            if not possible_indices:
+                # No candidates left (shouldn't happen if answer is in word_pool)
+                break
 
-            candidate_indices = self._select_guesses(possible_indices, depth)
-
-            for guess_idx in candidate_indices:
-                guess = word_list[guess_idx]
-                if guess not in explored_words:
-                    explored_words.append(guess)
-
-                feedback = feedback_table.get_feedback(guess, answer)
-                new_possible = self._filter_candidates_fast(possible_indices, guess_idx, feedback, word_list, feedback_table)
-                if not new_possible:
-                    continue
-
-                new_history = history + ((guess, feedback),)
-                new_state = CompactState.from_history(new_history, len(new_possible))
-                step_cost = self._compute_step_cost(guess, len(possible_indices), len(new_possible))
-                new_depth = depth + step_cost
-
-                generated_nodes += 1
-                self._push_frontier(frontier, new_state, new_history, new_possible, new_depth, seq)
-                seq += 1
-
-            frontier_max = max(frontier_max, self._frontier_size(frontier))
-
+        # Failed to solve
         return SolverResult(
-            False, tuple(), expanded_nodes, generated_nodes, frontier_max,
-            explored_words, [], list(self.starting_candidates_indices),
-            expanded_order                        ### PATCH ADDED ###
+            False, tuple(committed_history), inference_ops, 
+            generated_nodes, len(possible_indices),
+            explored_words, [g for g, _ in committed_history], 
+            list(self.starting_candidates_indices), expanded_order
         )
 
-
-    def _select_guesses(self, possible_indices: set[int], depth: float) -> list[int]:
-        if depth == 0:
-            cand = list(self.starting_candidates_indices & possible_indices)
-        else:
-            cand = list(possible_indices)
-        if len(cand) <= self.max_branching:
-            return cand
-        return cand[: self.max_branching]
-
-    def _compute_step_cost(self, guess: str, before_count: int, after_count: int) -> float:
-        return float(self.cost_fn(before_count, after_count, self.word_length))
-
-    def _filter_candidates_fast(self, possible_indices: set[int], guess_idx: int, feedback: Feedback, word_list: list[str], feedback_table: FeedbackTable) -> set[int]:
-        result: set[int] = set()
-        guess = word_list[guess_idx]
-        for idx in possible_indices:
-            target = word_list[idx]
-            if feedback_table.get_feedback(guess, target) == feedback:
-                result.add(idx)
-        return result
+    def _select_best_guess(
+        self, 
+        possible_indices: set[int], 
+        word_list: list[str], 
+        feedback_table: FeedbackTable,
+        attempt: int
+    ) -> tuple[Optional[int], int]:
+        """
+        Select the best guess from possible candidates WITHOUT knowing the answer.
+        Returns (best_guess_idx, number_of_inference_operations).
+        
+        Strategy: Pick guess that minimizes worst-case or expected remaining candidates.
+        """
+        inference_count = 0
+        
+        if not possible_indices:
+            return None, inference_count
+            
+        # On first attempt, prefer starting candidates
+        if attempt == 0 and self.starting_candidates_indices:
+            available_starters = list(self.starting_candidates_indices & possible_indices)
+            if available_starters:
+                return available_starters[0], inference_count
+        
+        # Convert to list for indexing
+        candidates = list(possible_indices)
+        
+        # If only one candidate left, guess it
+        if len(candidates) == 1:
+            return candidates[0], inference_count
+        
+        # Limit candidates to evaluate (for performance)
+        candidates_to_eval = candidates[:self.max_branching]
+        
+        # === Heuristic selection: minimize expected partition size ===
+        best_guess = candidates_to_eval[0]
+        best_score = float('inf')
+        
+        for guess_idx in candidates_to_eval:
+            guess = word_list[guess_idx]
+            
+            # Group candidates by the feedback they would produce
+            partition_sizes: dict[tuple, int] = {}
+            for target_idx in possible_indices:
+                target = word_list[target_idx]
+                fb = feedback_table.get_feedback(guess, target)
+                inference_count += 1
+                fb_key = tuple(fb)
+                partition_sizes[fb_key] = partition_sizes.get(fb_key, 0) + 1
+            
+            # Score: worst-case (max partition) or expected (avg partition)
+            if self.cost_fn_name in ["entropy", "partition"]:
+                # Use expected partition size (sum of squares / total)
+                score = sum(s * s for s in partition_sizes.values()) / len(possible_indices)
+            else:
+                # Use worst-case partition size
+                score = max(partition_sizes.values())
+            
+            if score < best_score:
+                best_score = score
+                best_guess = guess_idx
+        
+        return best_guess, inference_count
 
     # frontier hooks
     def _create_frontier(self):

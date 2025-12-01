@@ -224,7 +224,7 @@ class WordleUI:
             "BFS": "bfs-opt",
             "DFS": "dfs-opt",
             "UCS": "ucs-constant",
-            "A*": "dumb-random-then-astar"
+            "A*": "astar-reduction-log2"
         }
         solver_key = strategy_map.get(strategy)
         if not solver_key:
