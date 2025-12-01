@@ -53,13 +53,14 @@ class OptimizedGraphSearchSolver:
     _shared_feedback_table: FeedbackTable | None = None
     _shared_word_list: list[str] = []
 
-    def __init__(self, word_length: int = 5, max_branching: int = 30, cost_fn: str = "constant", heuristic_fn: str = "log2"):
+    def __init__(self, word_length: int = 5, max_branching: int = 30, cost_fn: str = "constant", heuristic_fn: str = "log2", strategy: str = "greedy"):
         self.word_length = word_length
         self.max_branching = max_branching
         self.cost_fn_name = cost_fn
         self.cost_fn = COST_FUNCTIONS.get(cost_fn, COST_FUNCTIONS["constant"])
         self.heuristic_fn_name = heuristic_fn
         self.heuristic_fn = HEURISTIC_FUNCTIONS.get(heuristic_fn, HEURISTIC_FUNCTIONS["log2"])
+        self.strategy = strategy  # "bfs", "dfs", "greedy", etc.
         self.starting_candidates_indices: set[int] = set()
 
     def solve(
@@ -179,7 +180,11 @@ class OptimizedGraphSearchSolver:
         Select the best guess from possible candidates WITHOUT knowing the answer.
         Returns (best_guess_idx, number_of_inference_operations).
         
-        Strategy: Pick guess that minimizes worst-case or expected remaining candidates.
+        Different strategies based on cost_fn_name:
+        - "constant" (BFS-like): Pick first candidate (no analysis)
+        - "reduction": Pick guess that maximizes average reduction
+        - "partition": Pick guess that minimizes expected partition size
+        - "entropy": Pick guess that maximizes information gain (entropy)
         """
         inference_count = 0
         
@@ -190,47 +195,119 @@ class OptimizedGraphSearchSolver:
         if attempt == 0 and self.starting_candidates_indices:
             available_starters = list(self.starting_candidates_indices & possible_indices)
             if available_starters:
-                return available_starters[0], inference_count
-        
-        # Convert to list for indexing
-        candidates = list(possible_indices)
+                # For "constant" strategy, just pick first starter
+                if self.cost_fn_name == "constant":
+                    return available_starters[0], inference_count
+                # For other strategies, evaluate starters to pick the best one
+                candidates_to_eval = available_starters[:self.max_branching]
+            else:
+                candidates_to_eval = list(possible_indices)[:self.max_branching]
+        else:
+            candidates_to_eval = list(possible_indices)[:self.max_branching]
         
         # If only one candidate left, guess it
-        if len(candidates) == 1:
-            return candidates[0], inference_count
+        if len(possible_indices) == 1:
+            return list(possible_indices)[0], inference_count
         
-        # Limit candidates to evaluate (for performance)
-        candidates_to_eval = candidates[:self.max_branching]
-        
-        # === Heuristic selection: minimize expected partition size ===
-        best_guess = candidates_to_eval[0]
-        best_score = float('inf')
-        
-        for guess_idx in candidates_to_eval:
-            guess = word_list[guess_idx]
-            
-            # Group candidates by the feedback they would produce
-            partition_sizes: dict[tuple, int] = {}
-            for target_idx in possible_indices:
-                target = word_list[target_idx]
-                fb = feedback_table.get_feedback(guess, target)
-                inference_count += 1
-                fb_key = tuple(fb)
-                partition_sizes[fb_key] = partition_sizes.get(fb_key, 0) + 1
-            
-            # Score: worst-case (max partition) or expected (avg partition)
-            if self.cost_fn_name in ["entropy", "partition"]:
-                # Use expected partition size (sum of squares / total)
-                score = sum(s * s for s in partition_sizes.values()) / len(possible_indices)
+        # === STRATEGY: CONSTANT (BFS/DFS-like) ===
+        # BFS: pick first candidate in order
+        # DFS: pick last candidate (or random for variety)
+        if self.cost_fn_name == "constant":
+            if self.strategy == "dfs":
+                # DFS-like: pick randomly from candidates (simulates depth-first exploration)
+                return random.choice(candidates_to_eval), inference_count
             else:
-                # Use worst-case partition size
-                score = max(partition_sizes.values())
-            
-            if score < best_score:
-                best_score = score
-                best_guess = guess_idx
+                # BFS-like: pick first candidate in order
+                return candidates_to_eval[0], inference_count
         
-        return best_guess, inference_count
+        # === STRATEGY: REDUCTION ===
+        # Pick guess that maximizes expected candidate reduction
+        if self.cost_fn_name == "reduction":
+            best_guess = candidates_to_eval[0]
+            best_reduction = 0.0
+            
+            for guess_idx in candidates_to_eval:
+                guess = word_list[guess_idx]
+                partition_sizes: list[int] = []
+                
+                partition_map: dict[tuple, int] = {}
+                for target_idx in possible_indices:
+                    target = word_list[target_idx]
+                    fb = feedback_table.get_feedback(guess, target)
+                    inference_count += 1
+                    fb_key = tuple(fb)
+                    partition_map[fb_key] = partition_map.get(fb_key, 0) + 1
+                
+                partition_sizes = list(partition_map.values())
+                # Expected reduction = original - expected remaining
+                expected_remaining = sum(s * s for s in partition_sizes) / len(possible_indices)
+                reduction = len(possible_indices) - expected_remaining
+                
+                if reduction > best_reduction:
+                    best_reduction = reduction
+                    best_guess = guess_idx
+            
+            return best_guess, inference_count
+        
+        # === STRATEGY: PARTITION (Minimax) ===
+        # Pick guess that minimizes worst-case partition size
+        if self.cost_fn_name == "partition":
+            best_guess = candidates_to_eval[0]
+            best_worst_case = float('inf')
+            
+            for guess_idx in candidates_to_eval:
+                guess = word_list[guess_idx]
+                partition_map: dict[tuple, int] = {}
+                
+                for target_idx in possible_indices:
+                    target = word_list[target_idx]
+                    fb = feedback_table.get_feedback(guess, target)
+                    inference_count += 1
+                    fb_key = tuple(fb)
+                    partition_map[fb_key] = partition_map.get(fb_key, 0) + 1
+                
+                worst_case = max(partition_map.values())
+                
+                if worst_case < best_worst_case:
+                    best_worst_case = worst_case
+                    best_guess = guess_idx
+            
+            return best_guess, inference_count
+        
+        # === STRATEGY: ENTROPY (Information Gain) ===
+        # Pick guess that maximizes expected information gain
+        if self.cost_fn_name == "entropy":
+            import math
+            best_guess = candidates_to_eval[0]
+            best_entropy = -1.0
+            
+            for guess_idx in candidates_to_eval:
+                guess = word_list[guess_idx]
+                partition_map: dict[tuple, int] = {}
+                
+                for target_idx in possible_indices:
+                    target = word_list[target_idx]
+                    fb = feedback_table.get_feedback(guess, target)
+                    inference_count += 1
+                    fb_key = tuple(fb)
+                    partition_map[fb_key] = partition_map.get(fb_key, 0) + 1
+                
+                # Calculate entropy: -sum(p * log2(p))
+                total = len(possible_indices)
+                entropy = 0.0
+                for size in partition_map.values():
+                    if size > 0:
+                        p = size / total
+                        entropy -= p * math.log2(p)
+                
+                if entropy > best_entropy:
+                    best_entropy = entropy
+                    best_guess = guess_idx
+            
+            return best_guess, inference_count
+        
+        # Fallback: first candidate
+        return candidates_to_eval[0], inference_count
 
     # frontier hooks
     def _create_frontier(self):

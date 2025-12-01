@@ -7,6 +7,8 @@ from typing import Dict
 
 class OptimizedBFS(OptimizedGraphSearchSolver):
     name = "bfs-opt"
+    def __init__(self, word_length: int = 5, max_branching: int = 30, cost_fn: str = "constant", heuristic_fn: str = "log2"):
+        super().__init__(word_length, max_branching, cost_fn, heuristic_fn, strategy="bfs")
     def _create_frontier(self): return deque()
     def _push_frontier(self, frontier, state, history, possible, depth, sequence):
         frontier.append((state, history, possible, depth))
@@ -17,6 +19,8 @@ class OptimizedBFS(OptimizedGraphSearchSolver):
 
 class OptimizedDFS(OptimizedGraphSearchSolver):
     name = "dfs-opt"
+    def __init__(self, word_length: int = 5, max_branching: int = 30, cost_fn: str = "constant", heuristic_fn: str = "log2"):
+        super().__init__(word_length, max_branching, cost_fn, heuristic_fn, strategy="dfs")
     def _create_frontier(self): return []
     def _push_frontier(self, frontier, state, history, possible, depth, sequence):
         frontier.append((state, history, possible, depth))
