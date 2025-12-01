@@ -1,121 +1,301 @@
 import tkinter as tk
-from tkinter import messagebox
+from tkinter import ttk
 import threading
 from solver.solvers import OPTIMIZED_SOLVERS
 
-# Configuration
-COLOR_CORRECT = "#6aaa64"
-COLOR_PRESENT = "#c9b458"
-COLOR_ABSENT = "#121213"
-COLOR_UNTESTED = "#818384"
-COLOR_DEFAULT_BG = "#121213"
-COLOR_TEXT = "#ffffff"
-COLOR_BORDER = "#3a3a3c"
-COLOR_BTN_BG = "#4c4c4e"
+# ============== MODERN LIGHT THEME ==============
+COLORS = {
+    # Main backgrounds
+    'bg_primary': '#FFFFFF',        # White background
+    'bg_secondary': '#F7F7F7',      # Light gray panels
+    'bg_tertiary': '#E8E8E8',       # Slightly darker for contrast
+    
+    # Cell colors
+    'correct': '#6AAA64',           # Green
+    'present': '#C9B458',           # Yellow/Gold
+    'absent': '#787C7E',            # Gray
+    'empty': '#FFFFFF',             # White empty cell
+    'empty_border': '#D3D6DA',      # Light border for empty cells
+    
+    # Text colors
+    'text_primary': '#1A1A1B',      # Dark text
+    'text_secondary': '#5A5A5A',    # Medium gray text
+    'text_light': '#FFFFFF',        # White text (on colored backgrounds)
+    'text_accent': '#538D4E',       # Green accent text
+    
+    # Button colors
+    'btn_primary': '#538D4E',       # Green buttons
+    'btn_secondary': '#878A8C',     # Gray buttons
+    'btn_danger': '#DC3545',        # Red buttons
+    'btn_hover': '#6AAA64',         # Hover state
+    
+    # Keyboard
+    'key_default': '#D3D6DA',       # Default key
+    'key_text': '#1A1A1B',          # Key text
+}
 
 class WordleUI:
     def __init__(self, root, engine):
         self.root = root
         self.engine = engine
         
-        self.root.title("Python Wordle AI")
-        self.root.geometry("650x950") # Increased height slightly for controls
-        self.root.configure(bg=COLOR_DEFAULT_BG)
+        self.root.title("Wordle AI Solver")
+        self.root.geometry("1100x700")  # Landscape orientation
+        self.root.configure(bg=COLORS['bg_primary'])
+        self.root.resizable(True, True)
         
-        self.current_guess_chars = [] 
-        
-        # Solver review state
+        self.current_guess_chars = []
         self.solver_history = []
         self.solver_step_index = 0
         self.is_review_mode = False
 
+        self._setup_styles()
         self._setup_layout()
         self._bind_events()
 
+    def _setup_styles(self):
+        """Configure ttk styles for modern look"""
+        self.style = ttk.Style()
+        self.style.theme_use('clam')
+        
+        # Button styles
+        self.style.configure('Primary.TButton',
+            font=('Segoe UI', 11, 'bold'),
+            padding=(15, 8),
+            background=COLORS['btn_primary'],
+            foreground=COLORS['text_light']
+        )
+        self.style.configure('Secondary.TButton',
+            font=('Segoe UI', 10),
+            padding=(12, 6),
+            background=COLORS['btn_secondary']
+        )
+
     def _setup_layout(self):
-        # 1. Title
-        lbl_title = tk.Label(self.root, text="WORDLE AI", font=("Helvetica", 36, "bold"), 
-                             bg=COLOR_DEFAULT_BG, fg=COLOR_TEXT)
-        lbl_title.pack(pady=(20, 5))
-
-        # 2. Message Area
-        self.msg_label = tk.Label(self.root, text="Ready", font=("Helvetica", 14), 
-                                  bg=COLOR_DEFAULT_BG, fg=COLOR_PRESENT)
-        self.msg_label.pack(pady=(0, 10))
-
-        # 3. Game Grid
-        self.grid_frame = tk.Frame(self.root, bg=COLOR_DEFAULT_BG)
-        self.grid_frame.pack(pady=5)
-
+        """Create landscape layout with left game area and right controls"""
+        
+        # Main container with padding
+        main_container = tk.Frame(self.root, bg=COLORS['bg_primary'], padx=20, pady=15)
+        main_container.pack(fill='both', expand=True)
+        
+        # ===== LEFT PANEL: Game Grid + Keyboard =====
+        left_panel = tk.Frame(main_container, bg=COLORS['bg_primary'])
+        left_panel.pack(side='left', fill='both', expand=True)
+        
+        # Title
+        title_frame = tk.Frame(left_panel, bg=COLORS['bg_primary'])
+        title_frame.pack(pady=(0, 10))
+        
+        tk.Label(title_frame, text="WORDLE", 
+                 font=('Segoe UI Black', 32, 'bold'),
+                 bg=COLORS['bg_primary'], 
+                 fg=COLORS['text_primary']).pack()
+        tk.Label(title_frame, text="AI SOLVER", 
+                 font=('Segoe UI', 12),
+                 bg=COLORS['bg_primary'], 
+                 fg=COLORS['text_secondary']).pack()
+        
+        # Message Area
+        self.msg_label = tk.Label(left_panel, text="Type a word or select an AI solver", 
+                                  font=('Segoe UI', 12),
+                                  bg=COLORS['bg_primary'], 
+                                  fg=COLORS['text_accent'])
+        self.msg_label.pack(pady=(5, 15))
+        
+        # Game Grid Container
+        grid_container = tk.Frame(left_panel, bg=COLORS['bg_primary'])
+        grid_container.pack(pady=10)
+        
         self.cells = []
         for row in range(6):
             row_cells = []
             for col in range(5):
-                frame = tk.Frame(self.grid_frame, width=60, height=60, bg=COLOR_BORDER)
-                frame.grid(row=row, column=col, padx=3, pady=3)
-                frame.pack_propagate(False)
+                # Outer frame for border effect
+                cell_frame = tk.Frame(grid_container, 
+                                      width=62, height=62,
+                                      bg=COLORS['empty_border'],
+                                      highlightthickness=0)
+                cell_frame.grid(row=row, column=col, padx=3, pady=3)
+                cell_frame.pack_propagate(False)
                 
-                lbl = tk.Label(frame, text="", font=("Helvetica", 24, "bold"), 
-                               bg=COLOR_DEFAULT_BG, fg=COLOR_TEXT)
-                lbl.pack(expand=True, fill="both", padx=2, pady=2)
-                row_cells.append({"frame": frame, "lbl": lbl})
+                # Inner label
+                cell_lbl = tk.Label(cell_frame, text="", 
+                                    font=('Segoe UI Black', 26, 'bold'),
+                                    bg=COLORS['empty'],
+                                    fg=COLORS['text_primary'])
+                cell_lbl.pack(expand=True, fill='both', padx=2, pady=2)
+                row_cells.append({"frame": cell_frame, "lbl": cell_lbl})
             self.cells.append(row_cells)
-
-        # 4. Manual Controls
-        controls_frame = tk.Frame(self.root, bg=COLOR_DEFAULT_BG)
-        controls_frame.pack(pady=10)
-        btn_config = {"font": ("Helvetica", 10, "bold"), "bg": COLOR_BTN_BG, "fg": COLOR_TEXT, "width": 8, "relief": "flat"}
         
-        tk.Button(controls_frame, text="ENTER", command=self.submit_guess, **btn_config).pack(side="left", padx=5)
-        tk.Button(controls_frame, text="RESET", command=self.reset_ui, **btn_config).pack(side="left", padx=5)
-
-        # 5. AI Solver Menu
-        solver_frame = tk.LabelFrame(self.root, text="AI Solvers", font=("Helvetica", 10),
-                                     bg=COLOR_DEFAULT_BG, fg=COLOR_UNTESTED, padx=10, pady=5)
-        solver_frame.pack(pady=5, fill="x", padx=40)
-
-        solver_btn_config = {"font": ("Helvetica", 9), "bg": "#2c2c2e", "fg": COLOR_TEXT, "width": 6, "relief": "raised"}
-
-        # Algorithm Buttons
-        tk.Button(solver_frame, text="BFS", command=lambda: self.run_solver("BFS"), **solver_btn_config).pack(side="left", padx=5)
-        tk.Button(solver_frame, text="DFS", command=lambda: self.run_solver("DFS"), **solver_btn_config).pack(side="left", padx=5)
-        tk.Button(solver_frame, text="UCS", command=lambda: self.run_solver("UCS"), **solver_btn_config).pack(side="left", padx=5)
-        tk.Button(solver_frame, text="A*", command=lambda: self.run_solver("A*"), **solver_btn_config).pack(side="left", padx=5)
+        # Keyboard
+        self.kb_frame = tk.Frame(left_panel, bg=COLORS['bg_primary'])
+        self.kb_frame.pack(pady=20)
         
-        tk.Button(solver_frame, text="Bench", command=self.run_benchmark_ui, bg="#8B0000", fg="white", font=("Helvetica", 9, "bold")).pack(side="right", padx=10)
-
-        # 6. Navigation Controls (Hidden by default)
-        self.nav_frame = tk.Frame(self.root, bg=COLOR_DEFAULT_BG)
-        # We pack it later when needed
-        
-        nav_btn_config = {"font": ("Helvetica", 12, "bold"), "bg": COLOR_PRESENT, "fg": "black", "width": 4}
-        self.btn_prev = tk.Button(self.nav_frame, text="<", command=lambda: self.navigate_solver(-1), **nav_btn_config)
-        self.btn_prev.pack(side="left", padx=20)
-        
-        self.lbl_step = tk.Label(self.nav_frame, text="Step 0/0", font=("Helvetica", 12), bg=COLOR_DEFAULT_BG, fg=COLOR_TEXT)
-        self.lbl_step.pack(side="left", padx=10)
-
-        self.btn_next = tk.Button(self.nav_frame, text=">", command=lambda: self.navigate_solver(1), **nav_btn_config)
-        self.btn_next.pack(side="left", padx=20)
-
-        # 7. Stats Display
-        self.stats_label = tk.Label(self.root, text="", font=("Courier New", 10), justify="left",
-                                    bg=COLOR_DEFAULT_BG, fg=COLOR_UNTESTED)
-        self.stats_label.pack(pady=5)
-
-        # 8. Keyboard
-        self.kb_frame = tk.Frame(self.root, bg=COLOR_DEFAULT_BG)
-        self.kb_frame.pack(pady=10)
         self.key_buttons = {}
-        for row_keys in ["QWERTYUIOP", "ASDFGHJKL", "ZXCVBNM"]:
-            row_frame = tk.Frame(self.kb_frame, bg=COLOR_DEFAULT_BG)
-            row_frame.pack()
-            for char in row_keys:
-                btn = tk.Label(row_frame, text=char, font=("Helvetica", 10, "bold"),
-                               width=3, height=1, bg=COLOR_UNTESTED, fg=COLOR_TEXT, relief="flat")
-                btn.pack(side="left", padx=1, pady=1)
-                self.key_buttons[char] = btn
+        keyboard_rows = [
+            list("QWERTYUIOP"),
+            list("ASDFGHJKL"),
+            ["ENTER"] + list("ZXCVBNM") + ["⌫"]
+        ]
         
+        for row_keys in keyboard_rows:
+            row_frame = tk.Frame(self.kb_frame, bg=COLORS['bg_primary'])
+            row_frame.pack(pady=4)
+            
+            for key in row_keys:
+                if key in ["ENTER", "⌫"]:
+                    width = 65
+                    font_size = 11
+                else:
+                    width = 44
+                    font_size = 14
+                
+                btn = tk.Button(row_frame, text=key,
+                               font=('Segoe UI', font_size, 'bold'),
+                               width=0,
+                               bg=COLORS['key_default'],
+                               fg=COLORS['key_text'],
+                               activebackground=COLORS['bg_tertiary'],
+                               relief='flat',
+                               bd=0,
+                               highlightthickness=0,
+                               cursor='hand2')
+                btn.configure(width=width//10, height=2 if key not in ["ENTER", "⌫"] else 2)
+                
+                # Bind click events
+                if key == "ENTER":
+                    btn.configure(command=self.submit_guess)
+                elif key == "⌫":
+                    btn.configure(command=self._backspace)
+                else:
+                    btn.configure(command=lambda k=key: self._key_click(k))
+                
+                btn.pack(side='left', padx=3)
+                
+                if key not in ["ENTER", "⌫"]:
+                    self.key_buttons[key] = btn
+        
+        # ===== RIGHT PANEL: Controls + Stats =====
+        right_panel = tk.Frame(main_container, bg=COLORS['bg_secondary'], width=320)
+        right_panel.pack(side='right', fill='y', padx=(20, 0))
+        right_panel.pack_propagate(False)
+        
+        # Right panel inner padding
+        right_inner = tk.Frame(right_panel, bg=COLORS['bg_secondary'], padx=20, pady=20)
+        right_inner.pack(fill='both', expand=True)
+        
+        # Section: Game Controls
+        tk.Label(right_inner, text="GAME CONTROLS",
+                font=('Segoe UI', 10, 'bold'),
+                bg=COLORS['bg_secondary'],
+                fg=COLORS['text_secondary']).pack(anchor='w', pady=(0, 10))
+        
+        game_btns = tk.Frame(right_inner, bg=COLORS['bg_secondary'])
+        game_btns.pack(fill='x', pady=(0, 20))
+        
+        self._create_button(game_btns, "NEW GAME", self.reset_ui, COLORS['btn_primary']).pack(fill='x', pady=3)
+        
+        # Separator
+        ttk.Separator(right_inner, orient='horizontal').pack(fill='x', pady=15)
+        
+        # Section: AI Solvers
+        tk.Label(right_inner, text="AI SOLVERS",
+                font=('Segoe UI', 10, 'bold'),
+                bg=COLORS['bg_secondary'],
+                fg=COLORS['text_secondary']).pack(anchor='w', pady=(0, 10))
+        
+        solver_grid = tk.Frame(right_inner, bg=COLORS['bg_secondary'])
+        solver_grid.pack(fill='x', pady=(0, 10))
+        
+        # Solver buttons in 2x2 grid
+        solvers = [("BFS", "BFS"), ("DFS", "DFS"), ("UCS", "UCS"), ("A*", "A*")]
+        for i, (label, strategy) in enumerate(solvers):
+            btn = self._create_button(solver_grid, label, 
+                                      lambda s=strategy: self.run_solver(s),
+                                      COLORS['btn_secondary'])
+            btn.grid(row=i//2, column=i%2, padx=3, pady=3, sticky='ew')
+        
+        solver_grid.columnconfigure(0, weight=1)
+        solver_grid.columnconfigure(1, weight=1)
+        
+        # Benchmark button
+        self._create_button(right_inner, "⏱ RUN BENCHMARK", self.run_benchmark_ui, 
+                           COLORS['btn_danger']).pack(fill='x', pady=(10, 0))
+        
+        # Separator
+        ttk.Separator(right_inner, orient='horizontal').pack(fill='x', pady=15)
+        
+        # Section: Navigation (hidden by default)
+        self.nav_frame = tk.Frame(right_inner, bg=COLORS['bg_secondary'])
+        
+        nav_row = tk.Frame(self.nav_frame, bg=COLORS['bg_secondary'])
+        nav_row.pack(fill='x', pady=10)
+        
+        self.btn_prev = tk.Button(nav_row, text="◀ PREV", 
+                                  font=('Segoe UI', 10, 'bold'),
+                                  bg=COLORS['btn_secondary'],
+                                  fg=COLORS['text_light'],
+                                  relief='flat',
+                                  cursor='hand2',
+                                  command=lambda: self.navigate_solver(-1))
+        self.btn_prev.pack(side='left', expand=True, fill='x', padx=(0, 5))
+        
+        self.btn_next = tk.Button(nav_row, text="NEXT ▶",
+                                  font=('Segoe UI', 10, 'bold'),
+                                  bg=COLORS['btn_secondary'],
+                                  fg=COLORS['text_light'],
+                                  relief='flat',
+                                  cursor='hand2',
+                                  command=lambda: self.navigate_solver(1))
+        self.btn_next.pack(side='right', expand=True, fill='x', padx=(5, 0))
+        
+        self.lbl_step = tk.Label(self.nav_frame, text="Step 0/0",
+                                 font=('Segoe UI', 12, 'bold'),
+                                 bg=COLORS['bg_secondary'],
+                                 fg=COLORS['text_primary'])
+        self.lbl_step.pack(pady=5)
+        
+        # Section: Statistics
+        tk.Label(right_inner, text="STATISTICS",
+                font=('Segoe UI', 10, 'bold'),
+                bg=COLORS['bg_secondary'],
+                fg=COLORS['text_secondary']).pack(anchor='w', pady=(0, 10))
+        
+        self.stats_label = tk.Label(right_inner, text="No solver run yet",
+                                    font=('Consolas', 9),
+                                    bg=COLORS['bg_secondary'],
+                                    fg=COLORS['text_secondary'],
+                                    justify='left',
+                                    anchor='nw')
+        self.stats_label.pack(fill='both', expand=True)
+
+    def _create_button(self, parent, text, command, color):
+        """Create a styled button"""
+        btn = tk.Button(parent, text=text,
+                       font=('Segoe UI', 10, 'bold'),
+                       bg=color,
+                       fg=COLORS['text_light'],
+                       activebackground=COLORS['btn_hover'],
+                       activeforeground=COLORS['text_light'],
+                       relief='flat',
+                       bd=0,
+                       padx=15, pady=8,
+                       cursor='hand2',
+                       command=command)
+        return btn
+
+    def _key_click(self, key):
+        """Handle virtual keyboard click"""
+        if len(self.current_guess_chars) < 5:
+            self.current_guess_chars.append(key)
+            self._update_grid_preview()
+
+    def _backspace(self):
+        """Handle backspace"""
+        if self.current_guess_chars:
+            self.current_guess_chars.pop()
+            self._update_grid_preview()
+
     def _bind_events(self):
         self.root.bind("<Key>", self._handle_keypress)
         self.root.bind("<Left>", lambda e: self.navigate_solver(-1))
@@ -153,44 +333,54 @@ class WordleUI:
         if self.engine.game_over or self.is_review_mode: return
         guess_str = "".join(self.current_guess_chars)
         if len(guess_str) != 5:
-            self.set_message("Not enough letters")
+            self.set_message("⚠ Not enough letters")
             return
         if not self.engine.is_valid_word(guess_str):
-            self.set_message("Not in word list")
+            self.set_message("⚠ Not in word list")
             return
         results = self.engine.process_guess(guess_str)
         self._update_ui_after_guess(results)
 
     def _update_ui_after_guess(self, results):
         row_idx = len(self.engine.guesses) - 1
-        # Should not happen if game over logic works, but safety check
         if row_idx >= 6: return 
 
         for col, status in enumerate(results):
-            color = COLOR_ABSENT
-            if status == "CORRECT": color = COLOR_CORRECT
-            elif status == "PRESENT": color = COLOR_PRESENT
-            self.cells[row_idx][col]["lbl"].config(bg=color, text=self.engine.guesses[row_idx][col])
-            self.cells[row_idx][col]["frame"].config(bg=color)
+            if status == "CORRECT":
+                bg_color = COLORS['correct']
+                fg_color = COLORS['text_light']
+            elif status == "PRESENT":
+                bg_color = COLORS['present']
+                fg_color = COLORS['text_light']
+            else:
+                bg_color = COLORS['absent']
+                fg_color = COLORS['text_light']
+            
+            self.cells[row_idx][col]["lbl"].config(bg=bg_color, fg=fg_color,
+                                                   text=self.engine.guesses[row_idx][col])
+            self.cells[row_idx][col]["frame"].config(bg=bg_color)
         
         self._update_keyboard(self.engine.letter_states)
         self.current_guess_chars = []
+        
         if self.engine.game_over:
-            if self.engine.is_win: self.set_message(f"Solved! ({len(self.engine.guesses)} guesses)")
-            else: self.set_message(f"Failed. Word: {self.engine.secret_word}")
+            if self.engine.is_win:
+                self.set_message(f"🎉 Solved in {len(self.engine.guesses)} guesses!")
+            else:
+                self.set_message(f"❌ The word was: {self.engine.secret_word}")
 
     def _update_keyboard(self, letter_states):
-        # Reset all first
         for btn in self.key_buttons.values():
-            btn.config(bg=COLOR_UNTESTED)
+            btn.config(bg=COLORS['key_default'], fg=COLORS['key_text'])
             
         for char, state in letter_states.items():
             if char in self.key_buttons:
-                color = COLOR_UNTESTED
-                if state == "CORRECT": color = COLOR_CORRECT
-                elif state == "PRESENT": color = COLOR_PRESENT
-                elif state == "ABSENT": color = COLOR_ABSENT 
-                self.key_buttons[char].config(bg=color)
+                if state == "CORRECT":
+                    self.key_buttons[char].config(bg=COLORS['correct'], fg=COLORS['text_light'])
+                elif state == "PRESENT":
+                    self.key_buttons[char].config(bg=COLORS['present'], fg=COLORS['text_light'])
+                elif state == "ABSENT":
+                    self.key_buttons[char].config(bg=COLORS['absent'], fg=COLORS['text_light'])
 
     def set_message(self, text):
         self.msg_label.config(text=text)
@@ -200,20 +390,20 @@ class WordleUI:
         self.current_guess_chars = []
         self.is_review_mode = False
         self.solver_history = []
-        self.nav_frame.pack_forget() # Hide nav controls
+        self.nav_frame.pack_forget()
         
-        self.set_message("New Game Started")
-        self.stats_label.config(text="")
+        self.set_message("New game started! Type a word or select an AI solver")
+        self.stats_label.config(text="No solver run yet")
         
-        # Clear grid
         for row in range(6):
             for col in range(5):
-                self.cells[row][col]["lbl"].config(text="", bg=COLOR_DEFAULT_BG)
-                self.cells[row][col]["frame"].config(bg=COLOR_BORDER)
+                self.cells[row][col]["lbl"].config(text="", 
+                                                   bg=COLORS['empty'],
+                                                   fg=COLORS['text_primary'])
+                self.cells[row][col]["frame"].config(bg=COLORS['empty_border'])
         
-        # Clear keyboard
         for btn in self.key_buttons.values():
-            btn.config(bg=COLOR_UNTESTED)
+            btn.config(bg=COLORS['key_default'], fg=COLORS['key_text'])
 
     # --- SOLVER INTEGRATION ---
     def run_solver(self, strategy):
@@ -223,28 +413,24 @@ class WordleUI:
         strategy_map = {
             "BFS": "bfs-opt",
             "DFS": "dfs-opt",
-            "UCS": "ucs-constant",
+            "UCS": "ucs-entropy",
             "A*": "astar-reduction-log2"
         }
         solver_key = strategy_map.get(strategy)
         if not solver_key:
-            self.set_message(f"Unknown strategy {strategy}")
+            self.set_message(f"⚠ Unknown strategy: {strategy}")
             return
 
         solver = OPTIMIZED_SOLVERS[solver_key]
-
-        self.set_message(f"AI ({strategy}) is thinking...")
+        self.set_message(f"🤖 AI ({strategy}) is thinking...")
         self.root.update()
 
         def solve_thread():
-            # Run solver with high attempt limit (ignore standard 6 limit)
             result = solver.solve(
                 answer=self.engine.secret_word,
                 word_pool=self.engine.word_list,
-                max_attempts=20, 
+                max_attempts=20,
             )
-
-            # Update UI on main thread
             self.root.after(0, lambda: self._on_solver_finished(result, strategy))
 
         threading.Thread(target=solve_thread, daemon=True).start()
@@ -254,73 +440,66 @@ class WordleUI:
         self.solver_history = result.history
         self.solver_step_index = 0
         
-        # Display Stats
         stats_text = (
-            f"Strategy: {strategy} | Solved: {result.success}\n"
-            f"Guesses: {len(result.history)} | Expanded: {result.expanded_nodes}\n"
-            f"Generated: {result.generated_nodes} | Frontier Max: {result.frontier_max}\n"
-            f"Use arrow keys or buttons to review steps."
+            f"Strategy: {strategy}\n"
+            f"Result: {'✓ Solved' if result.success else '✗ Failed'}\n"
+            f"─────────────────\n"
+            f"Guesses:    {len(result.history)}\n"
+            f"Expanded:   {result.expanded_nodes:,}\n"
+            f"Generated:  {result.generated_nodes:,}\n"
+            f"Max Front:  {result.frontier_max:,}\n"
+            f"─────────────────\n"
+            f"Use ◀ ▶ to step through"
         )
         self.stats_label.config(text=stats_text)
         
-        # Show Navigation Controls
-        self.nav_frame.pack(pady=5, before=self.stats_label)
-        
-        # Render first step (or empty)
+        self.nav_frame.pack(fill='x', pady=(0, 15))
         self._render_solver_state()
 
     def navigate_solver(self, direction):
         if not self.is_review_mode or not self.solver_history:
             return
-            
         new_index = self.solver_step_index + direction
-        
-        # Clamp index
-        # We allow index to go from 0 (before first guess) to len(history) (full view)
         max_idx = len(self.solver_history)
         if 0 <= new_index <= max_idx:
             self.solver_step_index = new_index
             self._render_solver_state()
 
     def _render_solver_state(self):
-        # Determine which slice of history to show
-        # current_idx implies how many guesses have been made.
-        # If idx=3, we show guesses 0, 1, 2.
-        
         guesses_to_show = self.solver_history[:self.solver_step_index]
         total_steps = len(self.solver_history)
         
-        self.lbl_step.config(text=f"Step {self.solver_step_index}/{total_steps}")
+        self.lbl_step.config(text=f"Step {self.solver_step_index} / {total_steps}")
         
-        # Scrolling logic: If we have more than 6 guesses, show the *latest* 6
         start_idx = 0
         if len(guesses_to_show) > 6:
             start_idx = len(guesses_to_show) - 6
-            
         visible_guesses = guesses_to_show[start_idx:]
         
-        # 1. Clear Grid
+        # Clear Grid
         for row in range(6):
             for col in range(5):
-                self.cells[row][col]["lbl"].config(text="", bg=COLOR_DEFAULT_BG)
-                self.cells[row][col]["frame"].config(bg=COLOR_BORDER)
+                self.cells[row][col]["lbl"].config(text="", 
+                                                   bg=COLORS['empty'],
+                                                   fg=COLORS['text_primary'])
+                self.cells[row][col]["frame"].config(bg=COLORS['empty_border'])
                 
-        # 2. Fill Grid with visible slice
+        # Fill Grid
         for r, (word, feedback_tuple) in enumerate(visible_guesses):
             for c, mark in enumerate(feedback_tuple):
-                # Mark is an Enum or object from feedback.py. 
-                # Assuming simple string mapping or direct attribute if using the user's Mark class
-                # Based on user files, Mark is likely an Enum. Convert to string key.
-                status = str(mark).upper().replace("MARK.", "") # Handle "Mark.CORRECT" -> "CORRECT"
+                status = str(mark).upper().replace("MARK.", "")
                 
-                color = COLOR_ABSENT
-                if "CORRECT" in status: color = COLOR_CORRECT
-                elif "PRESENT" in status: color = COLOR_PRESENT
+                if "CORRECT" in status:
+                    bg_color = COLORS['correct']
+                elif "PRESENT" in status:
+                    bg_color = COLORS['present']
+                else:
+                    bg_color = COLORS['absent']
                 
-                self.cells[r][c]["lbl"].config(text=word[c], bg=color)
-                self.cells[r][c]["frame"].config(bg=color)
+                self.cells[r][c]["lbl"].config(text=word[c], bg=bg_color, fg=COLORS['text_light'])
+                self.cells[r][c]["frame"].config(bg=bg_color)
 
-        # 3. Update Keyboard (based on ALL guesses up to this point)
+        # Update Keyboard
         temp_kb_state = {}
         for (word, feedback_tuple) in guesses_to_show:
             for i, char in enumerate(word):
@@ -338,7 +517,7 @@ class WordleUI:
 
     def run_benchmark_ui(self):
         import time, statistics, random, tracemalloc
-        self.set_message("⏱️ Benchmark running... (check console output)")
+        self.set_message("⏱ Benchmark running... check console")
         self.root.update()
 
         def benchmark_thread():
@@ -351,39 +530,29 @@ class WordleUI:
                 "UCS-Ent": "ucs-entropy",
                 "A*-Const-Log2": "astar-constant-log2",
                 "A*-Red-Log2": "astar-reduction-log2",
-                "A*-Const-Partition": "astar-constant-partition",
-                "A*-Red-Partition": "astar-reduction-partition",
-                "DumbRandA*": "dumb-random-then-astar",
+                "A*-Const-Part": "astar-constant-partition",
+                "A*-Red-Part": "astar-reduction-partition",
             }
             num_tests = 20
             test_answers = random.sample(self.engine.word_list, min(num_tests, len(self.engine.word_list)))
 
-            print("\n" + "="*80)
-            print(f"WORDLE SOLVER BENCHMARK")
-            print("="*80)
-            print(f"Configuration:")
-            print(f"  Dictionary size: {len(self.engine.word_list):,} words")
-            print(f"  Test cases: {len(test_answers)}")
-            print(f"  Max attempts: {self.engine.max_guesses}")
-            print(f"  Starting candidates: 10\n")
+            print("\n" + "="*100)
+            print("  WORDLE SOLVER BENCHMARK")
+            print("="*100)
+            print(f"  Dictionary: {len(self.engine.word_list):,} words | Tests: {len(test_answers)} | Max attempts: {self.engine.max_guesses}\n")
 
             all_results = {}
 
             for solver_label, solver_key in solver_configs.items():
                 if solver_key not in OPTIMIZED_SOLVERS:
-                    print(f"⚠️ {solver_label}: Not available")
+                    print(f"  ⚠ {solver_label}: Not available")
                     continue
                 solver = OPTIMIZED_SOLVERS[solver_key]
                 results = {
-                    'guesses': [],
-                    'expanded_nodes': [],
-                    'generated_nodes': [],
-                    'frontier_max': [],
-                    'times': [],
-                    'memories': [],
-                    'successes': 0,
+                    'guesses': [], 'expanded_nodes': [], 'generated_nodes': [],
+                    'frontier_max': [], 'times': [], 'memories': [], 'successes': 0,
                 }
-                print(f"Testing {solver_label:<15}", end='', flush=True)
+                print(f"  Testing {solver_label:<15}", end='', flush=True)
                 start_time = time.time()
                 tracemalloc.start()
                 for answer in test_answers:
@@ -394,15 +563,13 @@ class WordleUI:
                             answer=answer,
                             word_pool=self.engine.word_list,
                             max_attempts=self.engine.max_guesses,
-                            starting_candidates=[
-                                'SLATE', 'STARE', 'SPARE', 'STORE', 'AROSE',
-                                'RAISE', 'STALE', 'STERN', 'STEAL', 'SAVER'
-                            ]
+                            starting_candidates=['SLATE', 'STARE', 'SPARE', 'STORE', 'AROSE',
+                                                'RAISE', 'STALE', 'STERN', 'STEAL', 'SAVER']
                         )
                         elapsed = time.time() - t0
                         snapshot_after = tracemalloc.take_snapshot()
                         mem_diff = snapshot_after.compare_to(snapshot_before, 'filename')
-                        mem_usage = sum([stat.size_diff for stat in mem_diff]) / 1024  # KB
+                        mem_usage = sum([stat.size_diff for stat in mem_diff]) / 1024
                         if result.success:
                             results['guesses'].append(len(result.history))
                             results['expanded_nodes'].append(result.expanded_nodes)
@@ -412,7 +579,7 @@ class WordleUI:
                             results['memories'].append(mem_usage)
                             results['successes'] += 1
                     except Exception as e:
-                        print(f"\n  Error on {answer}: {e}")
+                        print(f"\n    Error on {answer}: {e}")
                         continue
                 tracemalloc.stop()
                 elapsed_total = time.time() - start_time
@@ -421,35 +588,29 @@ class WordleUI:
                         'success_rate': results['successes'] / len(test_answers),
                         'avg_guesses': statistics.mean(results['guesses']),
                         'std_guesses': statistics.stdev(results['guesses']) if len(results['guesses']) > 1 else 0,
-                        'min_guesses': min(results['guesses']),
-                        'max_guesses': max(results['guesses']),
                         'avg_expanded': statistics.mean(results['expanded_nodes']),
                         'avg_generated': statistics.mean(results['generated_nodes']),
                         'avg_frontier': statistics.mean(results['frontier_max']),
                         'avg_time': statistics.mean(results['times']),
                         'avg_memory': statistics.mean(results['memories']),
-                        'total_time': elapsed_total,
                     }
                     print(f" ✓ ({elapsed_total:.1f}s)")
                 else:
                     print(f" ✗ (failed)")
 
-            print("\n" + "="*100)
-            print(f"{'Solver':<15} {'Success':<12} {'Avg Guesses':<18} {'Avg Expanded':<16} {'Avg Time':<12} {'Avg Mem (KB)':<14}")
-            print("="*100)
+            print("\n" + "="*120)
+            print(f"  {'Solver':<16} {'Success':>8} {'Avg Guess':>12} {'Expanded':>14} {'Generated':>12} {'Frontier':>12} {'Time':>10}")
+            print("="*120)
             for solver_label in sorted(all_results.keys(), key=lambda x: all_results[x]['avg_guesses']):
-                stats = all_results[solver_label]
-                print(
-                    f"{solver_label:<15} "
-                    f"{stats['success_rate']*100:>5.0f}%{'':<6} "
-                    f"{stats['avg_guesses']:>6.2f} ± {stats['std_guesses']:>5.2f}  "
-                    f"{stats['avg_expanded']:>14,.0f}  "
-                    f"{stats['avg_time']:>10.3f}s  "
-                    f"{stats['avg_memory']:>10.2f} KB"
-                )
-            print("="*100)
-            print("\n✓ Benchmark complete!\n")
-            best_solver = min(all_results.items(), key=lambda x: x[1]['avg_guesses'])
-            self.set_message(f"✓ Benchmark done! Best: {best_solver[0]} ({best_solver[1]['avg_guesses']:.2f} avg guesses)")
+                s = all_results[solver_label]
+                print(f"  {solver_label:<16} {s['success_rate']*100:>7.0f}% "
+                      f"{s['avg_guesses']:>6.2f}±{s['std_guesses']:<4.2f} "
+                      f"{s['avg_expanded']:>14,.0f} {s['avg_generated']:>12,.0f} "
+                      f"{s['avg_frontier']:>12,.0f} {s['avg_time']:>9.3f}s")
+            print("="*120)
+            print("\n  ✓ Benchmark complete!\n")
+            
+            best = min(all_results.items(), key=lambda x: x[1]['avg_guesses'])
+            self.set_message(f"✓ Done! Best: {best[0]} ({best[1]['avg_guesses']:.2f} avg)")
 
         threading.Thread(target=benchmark_thread, daemon=True).start()
