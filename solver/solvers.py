@@ -7,8 +7,6 @@ from typing import Dict
 
 class OptimizedBFS(OptimizedGraphSearchSolver):
     name = "bfs-opt"
-    def __init__(self, word_length: int = 5, max_branching: int = 30, cost_fn: str = "constant", heuristic_fn: str = "log2"):
-        super().__init__(word_length, max_branching, cost_fn, heuristic_fn, strategy="bfs")
     def _create_frontier(self): return deque()
     def _push_frontier(self, frontier, state, history, possible, depth, sequence):
         frontier.append((state, history, possible, depth))
@@ -19,8 +17,6 @@ class OptimizedBFS(OptimizedGraphSearchSolver):
 
 class OptimizedDFS(OptimizedGraphSearchSolver):
     name = "dfs-opt"
-    def __init__(self, word_length: int = 5, max_branching: int = 30, cost_fn: str = "constant", heuristic_fn: str = "log2"):
-        super().__init__(word_length, max_branching, cost_fn, heuristic_fn, strategy="dfs")
     def _create_frontier(self): return []
     def _push_frontier(self, frontier, state, history, possible, depth, sequence):
         frontier.append((state, history, possible, depth))
@@ -61,13 +57,13 @@ def _build_registry() -> Dict[str, OptimizedGraphSearchSolver]:
     registry["dfs-opt"] = OptimizedDFS(max_branching=30)
     # UCS variants
     for cost_name in ["constant", "reduction", "partition", "entropy"]:
-        r = OptimizedUCS(max_branching=2000, cost_fn=cost_name)
+        r = OptimizedUCS(max_branching=30, cost_fn=cost_name)
         r.name = f"ucs-{cost_name}"
         registry[r.name] = r
     # A* variants
     for cost_name in ["constant", "reduction", "partition", "entropy"]:
-        for heuristic_name in ["log2", "partition"]:
-            r = OptimizedAStar(max_branching=2000, cost_fn=cost_name, heuristic_fn=heuristic_name)
+        for heuristic_name in ["log2", "partition","entropy"]:
+            r = OptimizedAStar(max_branching=30, cost_fn=cost_name, heuristic_fn=heuristic_name)
             r.name = f"astar-{cost_name}-{heuristic_name}"
             registry[r.name] = r
     return registry
