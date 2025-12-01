@@ -9,16 +9,8 @@ from engine.engine import WordleEngine
 from ui.graphic import WordleUI
 
 def main():
-    data_path = os.path.join(current_dir, "data", "words.txt")
-    
-    if not os.path.exists(data_path):
-        print(f"Warning: {data_path} not found. Please ensure data/words.txt exists.")
-        return
-    try:
-        engine = WordleEngine(data_path)
-    except Exception as e:
-        print(f"Error loading engine: {e}")
-        return
+
+    engine = WordleEngine("./data/words_max.txt")
 
     root = tk.Tk()
     root.eval('tk::PlaceWindow . center')

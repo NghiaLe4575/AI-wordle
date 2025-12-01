@@ -337,7 +337,119 @@ class WordleUI:
         self._update_keyboard(temp_kb_state)
 
     def run_benchmark_ui(self):
-        self.set_message("Running Benchmark in Console...")
+        import time, statistics, random, tracemalloc
+        self.set_message("⏱️ Benchmark running... (check console output)")
         self.root.update()
-        print("Benchmark triggered - implementation would go here.")
-        self.set_message("Benchmark Complete. Check Console.")
+
+        def benchmark_thread():
+            solver_configs = {
+                "BFS": "bfs-opt",
+                "DFS": "dfs-opt",
+                "UCS-Const": "ucs-constant",
+                "UCS-Red": "ucs-reduction",
+                "UCS-Part": "ucs-partition",
+                "UCS-Ent": "ucs-entropy",
+                "A*-Const-Log2": "astar-constant-log2",
+                "A*-Red-Log2": "astar-reduction-log2",
+                "A*-Const-Partition": "astar-constant-partition",
+                "A*-Red-Partition": "astar-reduction-partition",
+                "DumbRandA*": "dumb-random-then-astar",
+            }
+            num_tests = 20
+            test_answers = random.sample(self.engine.word_list, min(num_tests, len(self.engine.word_list)))
+
+            print("\n" + "="*80)
+            print(f"WORDLE SOLVER BENCHMARK")
+            print("="*80)
+            print(f"Configuration:")
+            print(f"  Dictionary size: {len(self.engine.word_list):,} words")
+            print(f"  Test cases: {len(test_answers)}")
+            print(f"  Max attempts: {self.engine.max_guesses}")
+            print(f"  Starting candidates: 10\n")
+
+            all_results = {}
+
+            for solver_label, solver_key in solver_configs.items():
+                if solver_key not in OPTIMIZED_SOLVERS:
+                    print(f"⚠️ {solver_label}: Not available")
+                    continue
+                solver = OPTIMIZED_SOLVERS[solver_key]
+                results = {
+                    'guesses': [],
+                    'expanded_nodes': [],
+                    'generated_nodes': [],
+                    'frontier_max': [],
+                    'times': [],
+                    'memories': [],
+                    'successes': 0,
+                }
+                print(f"Testing {solver_label:<15}", end='', flush=True)
+                start_time = time.time()
+                tracemalloc.start()
+                for answer in test_answers:
+                    try:
+                        t0 = time.time()
+                        snapshot_before = tracemalloc.take_snapshot()
+                        result = solver.solve(
+                            answer=answer,
+                            word_pool=self.engine.word_list,
+                            max_attempts=self.engine.max_guesses,
+                            starting_candidates=[
+                                'SLATE', 'STARE', 'SPARE', 'STORE', 'AROSE',
+                                'RAISE', 'STALE', 'STERN', 'STEAL', 'SAVER'
+                            ]
+                        )
+                        elapsed = time.time() - t0
+                        snapshot_after = tracemalloc.take_snapshot()
+                        mem_diff = snapshot_after.compare_to(snapshot_before, 'filename')
+                        mem_usage = sum([stat.size_diff for stat in mem_diff]) / 1024  # KB
+                        if result.success:
+                            results['guesses'].append(len(result.history))
+                            results['expanded_nodes'].append(result.expanded_nodes)
+                            results['generated_nodes'].append(result.generated_nodes)
+                            results['frontier_max'].append(result.frontier_max)
+                            results['times'].append(elapsed)
+                            results['memories'].append(mem_usage)
+                            results['successes'] += 1
+                    except Exception as e:
+                        print(f"\n  Error on {answer}: {e}")
+                        continue
+                tracemalloc.stop()
+                elapsed_total = time.time() - start_time
+                if results['successes'] > 0:
+                    all_results[solver_label] = {
+                        'success_rate': results['successes'] / len(test_answers),
+                        'avg_guesses': statistics.mean(results['guesses']),
+                        'std_guesses': statistics.stdev(results['guesses']) if len(results['guesses']) > 1 else 0,
+                        'min_guesses': min(results['guesses']),
+                        'max_guesses': max(results['guesses']),
+                        'avg_expanded': statistics.mean(results['expanded_nodes']),
+                        'avg_generated': statistics.mean(results['generated_nodes']),
+                        'avg_frontier': statistics.mean(results['frontier_max']),
+                        'avg_time': statistics.mean(results['times']),
+                        'avg_memory': statistics.mean(results['memories']),
+                        'total_time': elapsed_total,
+                    }
+                    print(f" ✓ ({elapsed_total:.1f}s)")
+                else:
+                    print(f" ✗ (failed)")
+
+            print("\n" + "="*100)
+            print(f"{'Solver':<15} {'Success':<12} {'Avg Guesses':<18} {'Avg Expanded':<16} {'Avg Time':<12} {'Avg Mem (KB)':<14}")
+            print("="*100)
+            for solver_label in sorted(all_results.keys(), key=lambda x: all_results[x]['avg_guesses']):
+                stats = all_results[solver_label]
+                print(
+                    f"{solver_label:<15} "
+                    f"{stats['success_rate']*100:>5.0f}%{'':<6} "
+                    f"{stats['avg_guesses']:>6.2f} ± {stats['std_guesses']:>5.2f}  "
+                    f"{stats['avg_expanded']:>14,.0f}  "
+                    f"{stats['avg_time']:>10.3f}s  "
+                    f"{stats['avg_memory']:>10.2f} KB"
+                )
+            print("="*100)
+            print("\n✓ Benchmark complete!\n")
+            best_solver = min(all_results.items(), key=lambda x: x[1]['avg_guesses'])
+            self.set_message(f"✓ Benchmark done! Best: {best_solver[0]} ({best_solver[1]['avg_guesses']:.2f} avg guesses)")
+
+        threading.Thread(target=benchmark_thread, daemon=True).start()
