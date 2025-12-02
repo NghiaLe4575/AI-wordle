@@ -6,6 +6,9 @@ import threading
 from pathlib import Path
 from solver.solvers import OPTIMIZED_SOLVERS
 from solver.feedback_table import FeedbackTable
+import datetime
+import logging
+import os
 # ============== MODERN LIGHT THEME ==============
 COLORS = {
     # Main backgrounds
@@ -566,6 +569,32 @@ class WordleUI:
         self._update_keyboard(letter_states)
 
     def run_benchmark_ui(self):
+
+        def setup_logger(log_dir="./experiments", num_tests=100, max_branch=2, feedback_name="fbtable_14855_895e583f"):
+            os.makedirs(log_dir, exist_ok=True)
+            
+            timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+            log_file = os.path.join(log_dir, f"benchmark_tests={num_tests}_maxg={max_branch}_fb={feedback_name}_{timestamp}.log")
+            logger = logging.getLogger("wordle_benchmark")
+            logger.setLevel(logging.INFO)
+            logger.handlers = []  # clear previous handlers
+            # Console handler
+            ch = logging.StreamHandler()
+            ch.setLevel(logging.INFO)
+            formatter = logging.Formatter('%(message)s')
+            ch.setFormatter(formatter)
+            logger.addHandler(ch)
+
+            # File handler
+            fh = logging.FileHandler(log_file)
+            fh.setLevel(logging.INFO)
+            fh.setFormatter(formatter)
+            logger.addHandler(fh)
+            return logger
+
+
+
+
         if self.feedback_table is None:
             self.set_message("⚠ Feedback table still loading... please wait")
             return
@@ -574,7 +603,7 @@ class WordleUI:
         self.set_message("⏱ Benchmark running... check console")
         self.root.update()
 
-        def benchmark_thread():
+        def benchmark_thread(log_dir = "./experiments"):
             solver_configs = {
                 "BFS": "bfs-opt",
                 "DFS": "dfs-opt",
@@ -587,22 +616,24 @@ class WordleUI:
                 "A*-Const-Part": "astar-constant-partition",
                 "A*-Red-Part": "astar-reduction-partition",
             }
-            num_tests = 20
+            num_tests = 100
             test_answers = random.sample(self.engine.word_list, 
                                         min(num_tests, len(self.engine.word_list)))
+            timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+            max_branch = OPTIMIZED_SOLVERS["bfs-opt"].max_branching
+            logger = setup_logger(log_dir=log_dir, num_tests=num_tests, 
+                                  max_branch=max_branch)
+            logger.info(f"Wordle Solver Benchmark - {timestamp}")
+            logger.info(f"Number of Tests: {len(test_answers)}")
+            logger.info(f"Max Branching: {max_branch}")
+            logger.info(f"Using Feedback Table: Yes")
+            logger.info("="*100 + "\n")
 
-            print("\n" + "="*100)
-            print("  WORDLE SOLVER BENCHMARK")
-            print("="*100)
-            
-            # BUILD FEEDBACK TABLE ONCE, BEFORE TESTING
-            
-            
             all_results = {}
 
             for solver_label, solver_key in solver_configs.items():
                 if solver_key not in OPTIMIZED_SOLVERS:
-                    print(f"  ⚠ {solver_label}: Not available")
+                    logger.error(f"  ⚠ {solver_label}: Not available")
                     continue
                 
                 solver = OPTIMIZED_SOLVERS[solver_key]
@@ -611,8 +642,7 @@ class WordleUI:
                     'frontier_max': [], 'times': [], 'successes': 0,
                 }
                 
-                print(f"  Testing {solver_label:<15}", end='', flush=True)
-                
+                logger.info(f"Solver: {solver_label} ({solver_key})")
                 # Time only the solving loop, not table building
                 solver_start_time = time.time()
                 
@@ -639,6 +669,7 @@ class WordleUI:
                             results['successes'] += 1
                     except Exception as e:
                         print(f"\n    Error on {answer}: {e}")
+                        logger.error(f"    Error on {answer}: {e}")
                         continue
                 
                 solver_elapsed = time.time() - solver_start_time
@@ -654,26 +685,28 @@ class WordleUI:
                         'avg_time': statistics.mean(results['times']),  # ← Use this, not elapsed_total!
                     }
                     # Print per-solve average time, not wall-clock total
-                    print(f" ✓ ({results['successes']}/{len(test_answers)} | " 
+                    logger.info(f" ✓ ({results['successes']}/{len(test_answers)} | " 
                         f"{all_results[solver_label]['avg_time']*1000:.1f}ms/solve)")
                 else:
-                    print(f" ✗ (failed)")
+                    logger.info(f" ✗ (failed)")
 
-            print("\n" + "="*120)
-            print(f"  {'Solver':<16} {'Success':>8} {'Avg Guess':>12} {'Expanded':>14} "
+            logger.info("\n" + "="*120)
+            logger.info(f"  {'Solver':<16} {'Success':>8} {'Avg Guess':>12} {'Expanded':>14} "
                 f"{'Generated':>12} {'Frontier':>12} {'Time':>10}")
-            print("="*120)
+            logger.info("="*120)
             
             for solver_label in sorted(all_results.keys(), 
                                     key=lambda x: all_results[x]['avg_guesses']):
                 s = all_results[solver_label]
-                print(f"  {solver_label:<16} {s['success_rate']*100:>7.0f}% "
+                logger.info(
+                    f"  {solver_label:<16} {s['success_rate']*100:>7.0f}% "
                     f"{s['avg_guesses']:>6.2f}±{s['std_guesses']:<4.2f} "
                     f"{s['avg_expanded']:>14,.0f} {s['avg_generated']:>12,.0f} "
-                    f"{s['avg_frontier']:>12,.0f} {s['avg_time']:>8.4f}s")
-            print("="*120)
-            print("\n  ✓ Benchmark complete!\n")
-            
+                    f"{s['avg_frontier']:>12,.0f} {s['avg_time']:>8.4f}s"
+                )
+
+            logger.info("="*120)
+            logger.info("\n  ✓ Benchmark complete!\n")
             best = min(all_results.items(), key=lambda x: x[1]['avg_guesses'])
             self.set_message(f"✓ Done! Best: {best[0]} ({best[1]['avg_guesses']:.2f} avg)")
 
