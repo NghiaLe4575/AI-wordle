@@ -1,8 +1,9 @@
 # Wordle AI Solver - Requirements
 # Python 3.10+ required
 
-# All dependencies are from Python standard library
-# No external packages needed
+psutil
+tkinter
+logging
 
 # The project uses:
 # - tkinter 
