@@ -1,0 +1,23 @@
+# Wordle AI Solver - Requirements
+# Python 3.10+ required
+
+# All dependencies are from Python standard library
+# No external packages needed
+
+# The project uses:
+# - tkinter 
+# - threading (concurrency)
+# - collections (deque, Counter)
+# - heapq (priority queues)
+# - random, math, hashlib, pickle
+# - typing (type hints)
+# - dataclasses
+# - pathlib
+# - datetime, logging
+# - os, sys
+
+# Note: If tkinter is not available on your system, install it:
+# Ubuntu/Debian: sudo apt-get install python3-tk
+# Fedora: sudo dnf install python3-tkinter
+# macOS: tkinter is included with Python from python.org
+# Windows: tkinter is included with Python installer
