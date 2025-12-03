@@ -2,13 +2,14 @@
 from __future__ import annotations
 import heapq
 import random
+import math
 from collections import deque
 from typing import Callable, List, Optional, Sequence, Set, Tuple
 
 from .state import CompactState
 from .feedback_table import FeedbackTable
 from .feedback import Feedback
-from .cost_functions import COST_FUNCTIONS
+from .cost_functions import COST_FUNCTIONS, compute_entropy
 from .heuristic_functions import HEURISTIC_FUNCTIONS
 
 class SolverResult:
@@ -132,7 +133,7 @@ class OptimizedGraphSearchSolver:
             if depth >= max_attempts:
                 continue
 
-            candidate_indices = self._select_guesses(possible_indices, depth)
+            candidate_indices = self._select_guesses(possible_indices, depth, word_list, feedback_table)
 
             for guess_idx in candidate_indices:
                 guess = word_list[guess_idx]
@@ -146,7 +147,10 @@ class OptimizedGraphSearchSolver:
 
                 new_history = history + ((guess, feedback),)
                 new_state = CompactState.from_history(new_history, len(new_possible))
-                step_cost = self._compute_step_cost(guess, len(possible_indices), len(new_possible))
+                step_cost = self._compute_step_cost(
+                    guess_idx, len(possible_indices), len(new_possible), 
+                    possible_indices, word_list, feedback_table
+                )
                 new_depth = depth + step_cost
 
                 generated_nodes += 1
@@ -162,7 +166,7 @@ class OptimizedGraphSearchSolver:
         )
 
 
-    def _select_guesses(self, possible_indices: set[int], depth: float) -> list[int]:
+    def _select_guesses(self, possible_indices: set[int], depth: float, word_list: list[str], feedback_table: FeedbackTable) -> list[int]:
         if depth == 0:
             cand = list(self.starting_candidates_indices & possible_indices)
         else:
@@ -173,8 +177,23 @@ class OptimizedGraphSearchSolver:
             return cand
         return cand[: self.max_branching]
 
-    def _compute_step_cost(self, guess: str, before_count: int, after_count: int) -> float:
-        return float(self.cost_fn(before_count, after_count, self.word_length))
+    def _compute_step_cost(self, guess_idx: int, before_count: int, after_count: int, 
+                          possible_indices: set[int], word_list: list[str], 
+                          feedback_table: FeedbackTable) -> float:
+        # Compute entropy and partition info
+        entropy, largest_partition, partitions = compute_entropy(
+            possible_indices, guess_idx, word_list, feedback_table
+        )
+        
+        # Calculate max possible entropy for normalization
+        max_entropy = math.log2(max(1, before_count))
+        
+        # Call cost function with all required parameters
+        return float(self.cost_fn(
+            before_count, after_count, self.word_length,
+            entropy=entropy, max_entropy=max_entropy, 
+            largest_partition=largest_partition
+        ))
 
     def _filter_candidates_fast(self, possible_indices: set[int], guess_idx: int, 
                                 feedback: Feedback, word_list: list[str], 
