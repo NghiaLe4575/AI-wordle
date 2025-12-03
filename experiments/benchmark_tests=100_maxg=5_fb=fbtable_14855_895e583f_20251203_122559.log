@@ -1,0 +1,9 @@
+Wordle Solver Benchmark - 20251203_122559
+Number of Tests: 100
+Max Branching: 5
+Using Feedback Table: Yes
+====================================================================================================
+
+Solver: BFS (bfs-opt)
+ ✓ (100/100 | 904.0ms/solve)
+Solver: DFS (dfs-opt)

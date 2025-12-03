@@ -11,6 +11,8 @@ import logging
 import os
 import psutil
 import json
+import tracemalloc
+
 # ============== MODERN LIGHT THEME ==============
 COLORS = {
     # Main backgrounds
@@ -593,12 +595,8 @@ class WordleUI:
             fh.setFormatter(formatter)
             logger.addHandler(fh)
             return logger
-
-        def get_memory_mb():
-            process = psutil.Process(os.getpid())
-            return process.memory_info().rss / (1024 ** 2)
-
-
+        
+        
 
 
         if self.feedback_table is None:
@@ -628,7 +626,7 @@ class WordleUI:
             timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
             max_branch = OPTIMIZED_SOLVERS["bfs-opt"].max_branching
 
-            results_file = "frequency.json"
+            results_file = "score_results_final.json"
 
             if os.path.exists(results_file):
                 with open(results_file, "r") as f:
@@ -654,8 +652,7 @@ class WordleUI:
                     continue
                 
                 solver = OPTIMIZED_SOLVERS[solver_key]
-                mem_before = get_memory_mb()
-                mem_peak = mem_before
+
                 results = {
                     'guesses': [], 'expanded_nodes': [], 'generated_nodes': [],
                     'frontier_max': [], 'times': [], 'successes': 0,
@@ -671,6 +668,7 @@ class WordleUI:
                 for answer in test_answers:
                     try:
                         t0 = time.time()
+                        tracemalloc.start()
                         result = solver.solve(
                             answer=answer,
                             word_pool=self.engine.word_list,
@@ -681,7 +679,9 @@ class WordleUI:
                                                 
                         )
                         elapsed = time.time() - t0
-                        mem_peak = max(mem_peak, get_memory_mb())
+                        current, peak = tracemalloc.get_traced_memory()
+                        mem_used = peak / 1024
+                        tracemalloc.stop()
                         if result.success:
                             results['guesses'].append(len(result.history))
                             results['expanded_nodes'].append(result.expanded_nodes)
@@ -689,24 +689,23 @@ class WordleUI:
                             results['frontier_max'].append(result.frontier_max)
                             results['times'].append(elapsed)
                             results['successes'] += 1
+                            results['mem_used_kb'] = mem_used
                     except Exception as e:
                         print(f"\n    Error on {answer}: {e}")
                         logger.error(f"    Error on {answer}: {e}")
                         continue
                 
                 solver_elapsed = time.time() - solver_start_time
-                mem_after = get_memory_mb()
-                mem_used = mem_peak - mem_before
                 if results['successes'] > 0:
                     all_results[solver_label] = {
                         'success_rate': results['successes'] / len(test_answers),
-                        'avg_guesses': results['guesses'],
+                        'avg_guesses': statistics.mean(results['guesses']),
                         'std_guesses': statistics.stdev(results['guesses']) if len(results['guesses']) > 1 else 0,
                         'avg_expanded': statistics.mean(results['expanded_nodes']),
                         'avg_generated': statistics.mean(results['generated_nodes']),
                         'avg_frontier': statistics.mean(results['frontier_max']),
                         'avg_time': statistics.mean(results['times']),  # ← Use this, not elapsed_total!
-                        'mem_used_mb': mem_used,
+                        'mem_used_kb': results.get('mem_used_kb', 0),
                     }
                     all_branch_results[max_branch] = all_results
 
@@ -721,25 +720,25 @@ class WordleUI:
                 else:
                     logger.info(f" ✗ (failed)")
 
-            # logger.info("\n" + "="*120)
-            # logger.info(f"  {'Solver':<16} {'Success':>8} {'Avg Guess':>12} {'Expanded':>14} "
-            #     f"{'Generated':>12} {'Frontier':>12} {'Time':>10} {'Memory':>10}")
-            # logger.info("="*120)
+            logger.info("\n" + "="*120)
+            logger.info(f"  {'Solver':<16} {'Success':>8} {'Avg Guess':>12} {'Expanded':>14} "
+                f"{'Generated':>12} {'Frontier':>12} {'Time':>10} {'Memory':>10}")
+            logger.info("="*120)
             
-            # for solver_label in sorted(all_results.keys(), 
-            #                         key=lambda x: all_results[x]['avg_guesses']):
-            #     s = all_results[solver_label]
-            #     logger.info(
-            #         f"  {solver_label:<16} {s['success_rate']*100:>7.0f}% "
-            #         # f"{s['avg_guesses']:>6.2f}±{s['std_guesses']:<4.2f} "
-            #         f"{s['avg_expanded']:>14,.0f} {s['avg_generated']:>12,.0f} "
-            #         f"{s['avg_frontier']:>12,.0f} {s['avg_time']:>8.4f}s {s['mem_used_mb']:>9.1f}MB"
+            for solver_label in sorted(all_results.keys(), 
+                                    key=lambda x: all_results[x]['avg_guesses']):
+                s = all_results[solver_label]
+                logger.info(
+                    f"  {solver_label:<16} {s['success_rate']*100:>7.0f}% "
+                    f"{s['avg_guesses']:>6.2f}±{s['std_guesses']:<4.2f} "
+                    f"{s['avg_expanded']:>14,.0f} {s['avg_generated']:>12,.0f} "
+                    f"{s['avg_frontier']:>12,.0f} {s['avg_time']:>8.4f}s {s['mem_used_kb']:>9.1f}MB"
                     
-            #     )
+                )
 
-            # logger.info("="*120)
-            # logger.info("\n  ✓ Benchmark complete!\n")
-            # best = min(all_results.items(), key=lambda x: x[1]['avg_guesses'])
-            # self.set_message(f"✓ Done! Best: {best[0]} ({best[1]['avg_guesses']:.2f} avg)")
+            logger.info("="*120)
+            logger.info("\n  ✓ Benchmark complete!\n")
+            best = min(all_results.items(), key=lambda x: x[1]['avg_guesses'])
+            self.set_message(f"✓ Done! Best: {best[0]} ({best[1]['avg_guesses']:.2f} avg)")
 
         threading.Thread(target=benchmark_thread, daemon=True).start()

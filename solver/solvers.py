@@ -87,7 +87,7 @@ class OptimizedAStar(OptimizedGraphSearchSolver):
         return len(frontier)
 
 # Build registry
-def _build_registry(max_branching_no = 2) -> Dict[str, OptimizedGraphSearchSolver]:
+def _build_registry(max_branching_no = 5) -> Dict[str, OptimizedGraphSearchSolver]:
     registry: Dict[str, OptimizedGraphSearchSolver] = {}
     registry["bfs-opt"] = OptimizedBFS(max_branching=max_branching_no)
     registry["dfs-opt"] = OptimizedDFS(max_branching=max_branching_no)
