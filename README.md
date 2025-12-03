@@ -26,7 +26,8 @@ wordle-solver/
 ```
 
 ## Quick Start
-For the application to run smoothly without having to wait for the app to build a feedback table. Download the .pkl feedback table at the google drive link:
+For the application to run smoothly without having to wait for the app to build a feedback table. Download the fbmat_14855_895e583f.pkl feedback table at the google drive link:
+https://drive.google.com/drive/folders/1Cqg15AeAEIJkiGbB_DNgTXMKdjlfw8IG?fbclid=IwY2xjawOdOrdleHRuA2FlbQIxMQBzcnRjBmFwcF9pZAEwAAEe4pgBLZGx-kDUSe3dUHatwKsjdNizdNXGWLQxrH-6zy0bbnlEyQY370jAWiY_aem_ZMDrSeoiQSfu8yWpg-P2Ug
 
 Then place the fbmat_14855_895e583f.pkl at a .cache folder in the root project
 
