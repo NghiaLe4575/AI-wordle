@@ -1,0 +1,41 @@
+Wordle Solver Benchmark - 20251202_181427
+Number of Tests: 100
+Max Branching: 1
+Using Feedback Table: Yes
+====================================================================================================
+
+Solver: BFS (bfs-opt)
+ ✓ (86/100 | 20.3ms/solve)
+Solver: DFS (dfs-opt)
+ ✓ (82/100 | 21.0ms/solve)
+Solver: UCS-Red (ucs-reduction)
+ ✓ (70/100 | 20.0ms/solve)
+Solver: UCS-Part (ucs-partition)
+ ✓ (70/100 | 20.0ms/solve)
+Solver: UCS-Ent (ucs-entropy)
+ ✓ (62/100 | 20.1ms/solve)
+Solver: A*-Const-Log2 (astar-constant-log2)
+ ✓ (86/100 | 20.1ms/solve)
+Solver: A*-Red-Log2 (astar-reduction-log2)
+ ✓ (65/100 | 20.0ms/solve)
+Solver: A*-Const-Part (astar-constant-partition)
+ ✓ (84/100 | 19.9ms/solve)
+Solver: A*-Red-Part (astar-reduction-partition)
+ ✓ (61/100 | 19.8ms/solve)
+
+========================================================================================================================
+  Solver            Success    Avg Guess       Expanded    Generated     Frontier       Time
+========================================================================================================================
+  A*-Red-Part           61%   4.07±0.89              5            4            1   0.0198s
+  UCS-Part              70%   4.11±0.81              5            4            1   0.0200s
+  A*-Red-Log2           65%   4.17±0.84              5            4            1   0.0200s
+  UCS-Ent               62%   4.27±0.81              5            4            1   0.0201s
+  DFS                   82%   4.37±1.08              5            4            1   0.0210s
+  A*-Const-Part         84%   4.37±0.94              5            4            1   0.0199s
+  UCS-Red               70%   4.41±0.77              5            4            1   0.0200s
+  BFS                   86%   4.45±0.98              5            4            1   0.0203s
+  A*-Const-Log2         86%   4.53±1.03              6            5            1   0.0201s
+========================================================================================================================
+
+  ✓ Benchmark complete!
+
