@@ -4,8 +4,8 @@ import tkinter as tk
 from tkinter import ttk
 import threading
 from pathlib import Path
-from solver.solvers import OPTIMIZED_SOLVERS
-from solver.feedback_table import FeedbackTable
+from solver.solvers import GRAPH_SOLVERS
+from solver.feedback_matrix import FeedbackMatrix
 import datetime
 import logging
 import os
@@ -20,9 +20,9 @@ COLORS = {
     'bg_tertiary': '#E8E8E8',       # Slightly darker for contrast
     
     # Cell colors
-    'correct': '#6AAA64',           # Green
-    'present': '#C9B458',           # Yellow/Gold
-    'miss': '#787C7E',            # Gray
+    'exact': '#6AAA64',           # Green
+    'partial': '#C9B458',           # Yellow/Gold
+    'absent': '#787C7E',            # Gray
     'empty': '#FFFFFF',             # White empty cell
     'empty_border': '#D3D6DA',      # Light border for empty cells
     
@@ -91,9 +91,9 @@ class WordleUI:
         # Build table in background to avoid UI freeze
         def load_table():
             try:
-                self.feedback_table = FeedbackTable(
-                    word_list=self.engine.word_list,
-                    cache_dir=Path(__file__).parent.parent / ".cache",
+                self.feedback_table = FeedbackMatrix(
+                    vocab=self.engine.word_list,
+                    folder=Path(__file__).parent.parent / ".cache",
                     verbose=True
                 )
                 print("[UI] Feedback table ready!")
@@ -382,14 +382,14 @@ class WordleUI:
         if row_idx >= 6: return 
 
         for col, status in enumerate(results):
-            if status == "CORRECT":
-                bg_color = COLORS['correct']
+            if status == "EXACT":
+                bg_color = COLORS['exact']
                 fg_color = COLORS['text_light']
-            elif status == "PRESENT":
-                bg_color = COLORS['present']
+            elif status == "PARTIAL":
+                bg_color = COLORS['partial']
                 fg_color = COLORS['text_light']
             else:
-                bg_color = COLORS['miss']
+                bg_color = COLORS['absent']
                 fg_color = COLORS['text_light']
             
             self.cells[row_idx][col]["lbl"].config(bg=bg_color, fg=fg_color,
@@ -411,12 +411,12 @@ class WordleUI:
             
         for char, state in letter_states.items():
             if char in self.key_buttons:
-                if state == "CORRECT":
-                    self.key_buttons[char].config(bg=COLORS['correct'], fg=COLORS['text_light'])
-                elif state == "PRESENT":
-                    self.key_buttons[char].config(bg=COLORS['present'], fg=COLORS['text_light'])
-                elif state == "MISS":
-                    self.key_buttons[char].config(bg=COLORS['miss'], fg=COLORS['text_light'])
+                if state == "EXACT":
+                    self.key_buttons[char].config(bg=COLORS['exact'], fg=COLORS['text_light'])
+                elif state == "PARTIAL":
+                    self.key_buttons[char].config(bg=COLORS['partial'], fg=COLORS['text_light'])
+                elif state == "ABSENT":
+                    self.key_buttons[char].config(bg=COLORS['absent'], fg=COLORS['text_light'])
 
     def set_message(self, text):
         self.msg_label.config(text=text)
@@ -451,8 +451,8 @@ class WordleUI:
             self.reset_ui()
 
         strategy_map = {
-            "BFS": "bfs-opt",
-            "DFS": "dfs-opt",
+            "BFS": "bfs",
+            "DFS": "dfs",
             "UCS": "ucs-entropy",
             "A*": "astar-reduction-log2"
         }
@@ -461,7 +461,7 @@ class WordleUI:
             self.set_message(f"⚠ Unknown strategy: {strategy}")
             return
 
-        solver = OPTIMIZED_SOLVERS[solver_key]
+        solver = GRAPH_SOLVERS[solver_key]
         self.set_message(f"🤖 AI ({strategy}) is thinking...")
         self.root.update()
 
@@ -469,9 +469,10 @@ class WordleUI:
             result = solver.solve(
                 answer=self.engine.secret_word,
                 word_pool=self.engine.word_list,
-                max_attempts=20,
-                shared_feedback_table=self.feedback_table,  # ← Pass pre-built table
-
+                max_turns=self.engine.max_guesses,
+                shared_table=self.feedback_table,  # ← Pass pre-built table
+                starting_words=['SLATE', 'STARE', 'SPARE', 'STORE', 'AROSE',
+                                                'RAISE', 'STALE', 'STERN', 'STEAL', 'SAVER']
             )
             self.root.after(0, lambda: self._on_solver_finished(result, strategy))
 
@@ -530,41 +531,41 @@ class WordleUI:
         # Fill Grid with visible guesses
         for r, (word, feedback_tuple) in enumerate(visible_guesses):
             for c, mark in enumerate(feedback_tuple):
-                # mark is a Mark enum (0=MISS, 1=PRESENT, 2=CORRECT)
+                # mark is a Mark enum (0=absent, 1=partial, 2=exact)
                 mark_value = int(mark)
                 
-                if mark_value == 2:  # Mark.CORRECT
-                    bg_color = COLORS['correct']
-                elif mark_value == 1:  # Mark.PRESENT
-                    bg_color = COLORS['present']
-                else:  # Mark.MISS (0)
-                    bg_color = COLORS['miss']
+                if mark_value == 2:  # Mark.exact
+                    bg_color = COLORS['exact']
+                elif mark_value == 1:  # Mark.partial
+                    bg_color = COLORS['partial']
+                else:  # Mark.absent (0)
+                    bg_color = COLORS['absent']
                 
                 self.cells[r][c]["lbl"].config(text=word[c], bg=bg_color, fg=COLORS['text_light'])
                 self.cells[r][c]["frame"].config(bg=bg_color)
         
-        # Update Keyboard with correct state mapping
+        # Update Keyboard with exact state mapping
         # Build letter_states dict in the same format as self.engine.letter_states
         letter_states = {}
         
         for (word, feedback_tuple) in guesses_to_show:
             for i, char in enumerate(word):
-                mark_value = int(feedback_tuple[i])  # 0=MISS, 1=PRESENT, 2=CORRECT
+                mark_value = int(feedback_tuple[i])  # 0=absent, 1=partial, 2=exact
                 
                 if mark_value == 2:
-                    current_status = "CORRECT"
+                    current_status = "EXACT"
                 elif mark_value == 1:
-                    current_status = "PRESENT"
+                    current_status = "PARTIAL"
                 else:
                     current_status = "ABSENT"
                 
-                # Priority: CORRECT > PRESENT > ABSENT
+                # Priority: exact > partial > ABSENT
                 existing_status = letter_states.get(char, "ABSENT")
                 
-                if current_status == "CORRECT":
-                    letter_states[char] = "CORRECT"
-                elif current_status == "PRESENT" and existing_status != "CORRECT":
-                    letter_states[char] = "PRESENT"
+                if current_status == "EXACT":
+                    letter_states[char] = "EXACT"
+                elif current_status == "PARTIAL" and existing_status != "exact":
+                    letter_states[char] = "PARTIAL"
                 elif current_status == "ABSENT" and existing_status == "ABSENT":
                     letter_states[char] = "ABSENT"
         
@@ -611,8 +612,8 @@ class WordleUI:
 
         def benchmark_thread(log_dir = "./experiments"):
             solver_configs = {
-                "BFS": "bfs-opt",
-                "DFS": "dfs-opt",
+                "BFS": "bfs",
+                "DFS": "dfs",
                 #"UCS-Const": "ucs-constant",
                 "UCS-Red": "ucs-reduction",
                 "UCS-Part": "ucs-partition",
@@ -626,7 +627,7 @@ class WordleUI:
             test_answers = random.sample(self.engine.word_list, 
                                         min(num_tests, len(self.engine.word_list)))
             timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-            max_branch = OPTIMIZED_SOLVERS["bfs-opt"].max_branching
+            max_branch = GRAPH_SOLVERS["bfs"].branch_limit
 
             results_file = "score_results_final.json"
 
@@ -649,11 +650,11 @@ class WordleUI:
             all_results = {}
 
             for solver_label, solver_key in solver_configs.items():
-                if solver_key not in OPTIMIZED_SOLVERS:
+                if solver_key not in GRAPH_SOLVERS:
                     logger.error(f"  ⚠ {solver_label}: Not available")
                     continue
                 
-                solver = OPTIMIZED_SOLVERS[solver_key]
+                solver = GRAPH_SOLVERS[solver_key]
 
                 results = {
                     'guesses': [], 'expanded_nodes': [], 'generated_nodes': [],
@@ -675,9 +676,9 @@ class WordleUI:
                         result = solver.solve(
                             answer=answer,
                             word_pool=self.engine.word_list,
-                            max_attempts=self.engine.max_guesses,
-                            shared_feedback_table=self.feedback_table,  # ← Pass pre-built table
-                            starting_candidates=['SLATE', 'STARE', 'SPARE', 'STORE', 'AROSE',
+                            max_turns=self.engine.max_guesses,
+                            shared_table=self.feedback_table,  # ← Pass pre-built table
+                            starting_words=['SLATE', 'STARE', 'SPARE', 'STORE', 'AROSE',
                                                 'RAISE', 'STALE', 'STERN', 'STEAL', 'SAVER']
                                                 
                         )
@@ -724,7 +725,7 @@ class WordleUI:
                         
 
                     # Print per-solve average time, not wall-clock total
-                    logger.info(f" ✓ ({results['successes']}/{len(test_answers)} | " 
+                    logger.info(f"({results['successes']}/{len(test_answers)} | " 
                         f"{all_results[solver_label]['avg_time']*1000:.1f}ms/solve)")
                 else:
                     logger.info(f" ✗ (failed)")
@@ -746,8 +747,8 @@ class WordleUI:
                 )
 
             logger.info("="*120)
-            logger.info("\n  ✓ Benchmark complete!\n")
+            logger.info("\nBenchmark complete!\n")
             best = min(all_results.items(), key=lambda x: x[1]['avg_guesses'])
-            self.set_message(f"✓ Done! Best: {best[0]} ({best[1]['avg_guesses']:.2f} avg)")
+            self.set_message(f"Done! Best: {best[0]} ({best[1]['avg_guesses']:.2f} avg)")
 
         threading.Thread(target=benchmark_thread, daemon=True).start()

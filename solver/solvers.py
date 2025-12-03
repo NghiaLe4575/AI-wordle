@@ -1,107 +1,161 @@
 # solver/solvers.py
 from __future__ import annotations
-from collections import deque
+
 import heapq
-from .search_base import OptimizedGraphSearchSolver
+from collections import deque
 from typing import Dict
+
+from .search_base import GraphSearchAlgorithm
 from .cost_functions import compute_entropy
 import math
 
-class OptimizedBFS(OptimizedGraphSearchSolver):
-    name = "bfs-opt"
-    def _create_frontier(self): return deque()
-    def _push_frontier(self, frontier, state, history, possible, depth, sequence):
+
+# --------------------------------------------------
+# BFS implementation
+# --------------------------------------------------
+class BFS(GraphSearchAlgorithm):
+    label = "bfs"
+
+    def _create_frontier(self):
+        return deque()
+
+    def _push_frontier(self, frontier, state, history, possible, depth, seq):
         frontier.append((state, history, possible, depth))
+
     def _pop_frontier(self, frontier):
         return frontier.popleft()
-    def _frontier_empty(self, frontier): return not frontier
-    def _frontier_size(self, frontier): return len(frontier)
 
-class OptimizedDFS(OptimizedGraphSearchSolver):
-    name = "dfs-opt"
-    def _create_frontier(self): return []
-    def _push_frontier(self, frontier, state, history, possible, depth, sequence):
-        frontier.append((state, history, possible, depth))
-    def _pop_frontier(self, frontier): return frontier.pop()
-    def _frontier_empty(self, frontier): return not frontier
-    def _frontier_size(self, frontier): return len(frontier)
-
-class OptimizedUCS(OptimizedGraphSearchSolver):
-    name = "ucs-opt"
-    def _create_frontier(self): return []
-    def _push_frontier(self, frontier, state, history, possible, depth, sequence):
-        heapq.heappush(frontier, (depth, sequence, state, history, possible, depth))
-    def _pop_frontier(self, frontier):
-        _, _, state, history, possible, depth = heapq.heappop(frontier)
-        return state, history, possible, depth
-    def _frontier_empty(self, frontier): return not frontier
-    def _frontier_size(self, frontier): return len(frontier)
-
-
-class OptimizedAStar(OptimizedGraphSearchSolver):
-    name = "astar-opt"
-    
-    def __init__(self, word_length: int = 5, max_branching: int = 30, cost_fn: str = "constant", heuristic_fn: str = "log2"):
-        super().__init__(word_length, max_branching, cost_fn, heuristic_fn)
-    
-    def _create_frontier(self):
-        return []
-    
-    def _push_frontier(self, frontier, state, history, possible, depth, sequence):
-        # Compute entropy info for heuristic evaluation
-        # We need to pick a guess to evaluate; use the first candidate
-        # For a* to work properly, we need to estimate remaining cost
-        
-        word_list = OptimizedGraphSearchSolver._shared_word_list
-        feedback_table = OptimizedGraphSearchSolver._shared_feedback_table
-        
-        # Pick a representative guess (e.g., first in possible set)
-        # This is a heuristic estimate of the partition quality
-        if possible:
-            guess_idx = next(iter(possible))
-            entropy, largest_partition, _ = compute_entropy(possible, guess_idx, word_list, feedback_table)
-            #max_entropy = math.log2(max(1, len(possible)))
-        else:
-            entropy = 0.0
-            largest_partition = 0
-            #max_entropy = 0.0
-        
-        # Call heuristic with all required parameters
-        heuristic = self.heuristic_fn(
-            len(possible), 
-            self.word_length,
-            largest_partition=largest_partition,
-        )
-        
-        priority = depth + heuristic
-        heapq.heappush(frontier, (priority, sequence, state, history, possible, depth))
-    
-    def _pop_frontier(self, frontier):
-        _, _, state, history, possible, depth = heapq.heappop(frontier)
-        return state, history, possible, depth
-    
     def _frontier_empty(self, frontier):
         return not frontier
-    
+
     def _frontier_size(self, frontier):
         return len(frontier)
 
-# Build registry
-def _build_registry(max_branching_no = 6) -> Dict[str, OptimizedGraphSearchSolver]:
-    registry: Dict[str, OptimizedGraphSearchSolver] = {}
-    registry["bfs-opt"] = OptimizedBFS(max_branching=max_branching_no)
-    registry["dfs-opt"] = OptimizedDFS(max_branching=max_branching_no)
-    # UCS variants
-    for cost_name in ["constant", "reduction", "partition", "entropy"]:
-        r = OptimizedUCS(max_branching=max_branching_no, cost_fn=cost_name)
-        r.name = f"ucs-{cost_name}"
-        registry[r.name] = r
-    # A* variants
-    for cost_name in ["constant", "reduction", "partition", "entropy"]:
-        for heuristic_name in ["log2", "partition","entropy"]:
-            r = OptimizedAStar(max_branching=max_branching_no, cost_fn=cost_name, heuristic_fn=heuristic_name)
-            r.name = f"astar-{cost_name}-{heuristic_name}"
-            registry[r.name] = r
-    return registry
 
-OPTIMIZED_SOLVERS = _build_registry()
+# --------------------------------------------------
+# DFS implementation
+# --------------------------------------------------
+class DFS(GraphSearchAlgorithm):
+    label = "dfs"
+
+    def _create_frontier(self):
+        return []
+
+    def _push_frontier(self, frontier, state, history, possible, depth, seq):
+        frontier.append((state, history, possible, depth))
+
+    def _pop_frontier(self, frontier):
+        return frontier.pop()
+
+    def _frontier_empty(self, frontier):
+        return not frontier
+
+    def _frontier_size(self, frontier):
+        return len(frontier)
+
+
+# --------------------------------------------------
+# Uniform-Cost Search
+# --------------------------------------------------
+class UCS(GraphSearchAlgorithm):
+    label = "ucs"
+
+    def _create_frontier(self):
+        return []
+
+    def _push_frontier(self, frontier, state, history, possible, depth, seq):
+        # Use (cost, seq) ordering for stability
+        heapq.heappush(
+            frontier, (depth, seq, state, history, possible, depth)
+        )
+
+    def _pop_frontier(self, frontier):
+        _, _, state, history, possible, depth = heapq.heappop(frontier)
+        return state, history, possible, depth
+
+    def _frontier_empty(self, frontier):
+        return not frontier
+
+    def _frontier_size(self, frontier):
+        return len(frontier)
+
+
+# --------------------------------------------------
+# A* Search
+# --------------------------------------------------
+class AStar(GraphSearchAlgorithm):
+    label = "astar"
+
+    def __init__(self, word_length=5, branch_limit=6, cost_fn="constant", heuristic_fn="log2"):
+        super().__init__(word_length, branch_limit, cost_fn, heuristic_fn)
+
+    def _create_frontier(self):
+        return []
+
+    def _push_frontier(self, frontier, state, history, possible, depth, seq):
+        # Heuristic calculation requires a representative guess index
+        full_list = GraphSearchAlgorithm._global_wordlist
+        fbt = GraphSearchAlgorithm._cached_table
+
+        if possible:
+            sample_idx = next(iter(possible))
+            entropy_val, largest_block, _ = compute_entropy(
+                possible, sample_idx, full_list, fbt
+            )
+        else:
+            largest_block = 0
+
+        heuristic = self.heuristic_f(
+            len(possible),
+            self.word_length,
+            largest_partition=largest_block,
+        )
+
+        priority = depth + heuristic
+
+        heapq.heappush(
+            frontier,
+            (priority, seq, state, history, possible, depth)
+        )
+
+    def _pop_frontier(self, frontier):
+        _, _, state, history, possible, depth = heapq.heappop(frontier)
+        return state, history, possible, depth
+
+    def _frontier_empty(self, frontier):
+        return not frontier
+
+    def _frontier_size(self, frontier):
+        return len(frontier)
+
+
+# --------------------------------------------------
+# Registry builder
+# --------------------------------------------------
+def _build_registry(branch_limit=2) -> Dict[str, GraphSearchAlgorithm]:
+    reg: Dict[str, GraphSearchAlgorithm] = {}
+
+    reg["bfs"] = BFS(branch_limit=branch_limit)
+    reg["dfs"] = DFS(branch_limit=branch_limit)
+
+    # UCS variants
+    for cost_mode in ["constant", "reduction", "partition", "entropy"]:
+        solver = UCS(branch_limit=branch_limit, cost_fn=cost_mode)
+        solver.label = f"ucs-{cost_mode}"
+        reg[solver.label] = solver
+
+    # A* variants
+    for cost_mode in ["constant", "reduction", "partition", "entropy"]:
+        for heur in ["log2", "partition", "entropy"]:
+            solver = AStar(
+                branch_limit=branch_limit,
+                cost_fn=cost_mode,
+                heuristic_fn=heur,
+            )
+            solver.label = f"astar-{cost_mode}-{heur}"
+            reg[solver.label] = solver
+
+    return reg
+
+
+GRAPH_SOLVERS = _build_registry()
