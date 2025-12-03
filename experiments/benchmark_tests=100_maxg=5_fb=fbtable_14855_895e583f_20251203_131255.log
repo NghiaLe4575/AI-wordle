@@ -1,0 +1,41 @@
+Wordle Solver Benchmark - 20251203_131255
+Number of Tests: 100
+Max Branching: 5
+Using Feedback Table: Yes
+====================================================================================================
+
+Solver: BFS (bfs-opt)
+ ✓ (100/100 | 251.0ms/solve)
+Solver: DFS (dfs-opt)
+ ✓ (100/100 | 198.0ms/solve)
+Solver: UCS-Red (ucs-reduction)
+ ✓ (100/100 | 244.2ms/solve)
+Solver: UCS-Part (ucs-partition)
+ ✓ (100/100 | 246.5ms/solve)
+Solver: UCS-Ent (ucs-entropy)
+ ✓ (100/100 | 244.1ms/solve)
+Solver: A*-Const-Log2 (astar-constant-log2)
+ ✓ (100/100 | 219.2ms/solve)
+Solver: A*-Red-Log2 (astar-reduction-log2)
+ ✓ (100/100 | 218.8ms/solve)
+Solver: A*-Const-Part (astar-constant-partition)
+ ✓ (100/100 | 218.9ms/solve)
+Solver: A*-Red-Part (astar-reduction-partition)
+ ✓ (100/100 | 218.8ms/solve)
+
+========================================================================================================================
+  Solver            Success    Avg Guess       Expanded    Generated     Frontier       Time     Memory
+========================================================================================================================
+  UCS-Part             100%   2.78±0.42             47          207          162   0.2465s      32.0KB
+  UCS-Red              100%   2.82±0.39             31          134          105   0.2442s   24512.0KB
+  UCS-Ent              100%   2.83±0.38             33          147          116   0.2441s      96.0KB
+  BFS                  100%   2.86±0.38             45          200          156   0.2510s    3888.0KB
+  A*-Const-Log2        100%   2.98±0.53              4           14           12   0.2192s      16.0KB
+  A*-Const-Part        100%   2.98±0.51              6           17           14   0.2189s       0.0KB
+  A*-Red-Part          100%   3.01±0.54              6           17           14   0.2188s       0.0KB
+  A*-Red-Log2          100%   3.13±0.60              5           15           12   0.2188s      16.0KB
+  DFS                  100%   4.99±1.07              7           22           17   0.1980s      32.0KB
+========================================================================================================================
+
+  ✓ Benchmark complete!
+

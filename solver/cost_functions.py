@@ -2,7 +2,7 @@
 from __future__ import annotations
 import math
 from typing import Dict, Tuple
-from .feedback import Mark, Feedback
+from .letter_feedback import Mark, Feedback
 
 def compute_entropy(candidates_indices: set[int], guess_idx: int, word_list: list[str], 
                    feedback_table) -> Tuple[float, int, Dict]:
