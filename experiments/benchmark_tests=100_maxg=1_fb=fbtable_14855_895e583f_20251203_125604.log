@@ -1,0 +1,41 @@
+Wordle Solver Benchmark - 20251203_125604
+NuKBer of Tests: 100
+Max Branching: 1
+Using Feedback Table: Yes
+====================================================================================================
+
+Solver: BFS (bfs-opt)
+ ✓ (83/100 | 41.3ms/solve)
+Solver: DFS (dfs-opt)
+ ✓ (84/100 | 40.7ms/solve)
+Solver: UCS-Red (ucs-reduction)
+ ✓ (74/100 | 40.9ms/solve)
+Solver: UCS-Part (ucs-partition)
+ ✓ (70/100 | 41.3ms/solve)
+Solver: UCS-Ent (ucs-entropy)
+ ✓ (59/100 | 41.1ms/solve)
+Solver: A*-Const-Log2 (astar-constant-log2)
+ ✓ (86/100 | 63.6ms/solve)
+Solver: A*-Red-Log2 (astar-reduction-log2)
+ ✓ (72/100 | 63.5ms/solve)
+Solver: A*-Const-Part (astar-constant-partition)
+ ✓ (84/100 | 63.4ms/solve)
+Solver: A*-Red-Part (astar-reduction-partition)
+ ✓ (64/100 | 63.7ms/solve)
+
+========================================================================================================================
+  Solver            Success    Avg Guess       Expanded    Generated     Frontier       Time     Memory
+========================================================================================================================
+  UCS-Ent               59%   4.08±0.77              5            4            1   0.0411s      16.0KB
+  UCS-Red               74%   4.22±0.86              5            4            1   0.0409s       0.0KB
+  A*-Red-Log2           72%   4.24±0.80              5            4            1   0.0635s      32.0KB
+  UCS-Part              70%   4.29±0.74              5            4            1   0.0413s       0.0KB
+  A*-Red-Part           64%   4.41±0.75              5            4            1   0.0637s      16.0KB
+  A*-Const-Log2         86%   4.49±0.95              5            4            1   0.0636s       0.0KB
+  A*-Const-Part         84%   4.51±0.88              6            5            1   0.0634s      16.0KB
+  DFS                   84%   4.55±1.05              6            5            1   0.0407s       0.0KB
+  BFS                   83%   4.55±0.95              6            5            1   0.0413s    3152.0KB
+========================================================================================================================
+
+  ✓ Benchmark complete!
+

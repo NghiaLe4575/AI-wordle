@@ -11,7 +11,6 @@ import logging
 import os
 import psutil
 import json
-import tracemalloc
 
 # ============== MODERN LIGHT THEME ==============
 COLORS = {
@@ -596,7 +595,10 @@ class WordleUI:
             logger.addHandler(fh)
             return logger
         
-        
+        def get_memory_kb():
+            process = psutil.Process(os.getpid())
+            return process.memory_info().rss / 1024 # KB
+
 
 
         if self.feedback_table is None:
@@ -662,13 +664,14 @@ class WordleUI:
                 # Time only the solving loop, not table building
                 solver_start_time = time.time()
                 
-
+                mem_peak = 0
 
 
                 for answer in test_answers:
                     try:
                         t0 = time.time()
-                        tracemalloc.start()
+                        mem_before_solve = get_memory_kb()
+
                         result = solver.solve(
                             answer=answer,
                             word_pool=self.engine.word_list,
@@ -678,10 +681,16 @@ class WordleUI:
                                                 'RAISE', 'STALE', 'STERN', 'STEAL', 'SAVER']
                                                 
                         )
+
+                        mem_after_solve = get_memory_kb()
+                        mem_used_this = mem_after_solve - mem_before_solve
+                        mem_peak = max(mem_peak, mem_used_this)
+
+
                         elapsed = time.time() - t0
-                        current, peak = tracemalloc.get_traced_memory()
-                        mem_used = peak / 1024
-                        tracemalloc.stop()
+                        # current, peak = tracemalloc.get_traced_memory()
+                        # mem_used = peak / (1024 * 1024)  # in MB
+                        # tracemalloc.stop()
                         if result.success:
                             results['guesses'].append(len(result.history))
                             results['expanded_nodes'].append(result.expanded_nodes)
@@ -689,7 +698,7 @@ class WordleUI:
                             results['frontier_max'].append(result.frontier_max)
                             results['times'].append(elapsed)
                             results['successes'] += 1
-                            results['mem_used_kb'] = mem_used
+                            results['mem_used_kb'] = mem_peak
                     except Exception as e:
                         print(f"\n    Error on {answer}: {e}")
                         logger.error(f"    Error on {answer}: {e}")
@@ -732,7 +741,7 @@ class WordleUI:
                     f"  {solver_label:<16} {s['success_rate']*100:>7.0f}% "
                     f"{s['avg_guesses']:>6.2f}±{s['std_guesses']:<4.2f} "
                     f"{s['avg_expanded']:>14,.0f} {s['avg_generated']:>12,.0f} "
-                    f"{s['avg_frontier']:>12,.0f} {s['avg_time']:>8.4f}s {s['mem_used_kb']:>9.1f}MB"
+                    f"{s['avg_frontier']:>12,.0f} {s['avg_time']:>8.4f}s {s['mem_used_kb']:>9.1f}KB"
                     
                 )
 

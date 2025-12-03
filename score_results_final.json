@@ -1,0 +1,494 @@
+{
+    "1": {
+        "BFS": {
+            "success_rate": 0.83,
+            "avg_guesses": 4.554216867469879,
+            "std_guesses": 0.9532103912337093,
+            "avg_expanded": 5.554216867469879,
+            "avg_generated": 4.554216867469879,
+            "avg_frontier": 1,
+            "avg_time": 0.04129131443529244,
+            "mem_used_kb": 3152.0
+        },
+        "DFS": {
+            "success_rate": 0.84,
+            "avg_guesses": 4.5476190476190474,
+            "std_guesses": 1.0459878815299515,
+            "avg_expanded": 5.5476190476190474,
+            "avg_generated": 4.5476190476190474,
+            "avg_frontier": 1,
+            "avg_time": 0.04066128957839239,
+            "mem_used_kb": 0
+        },
+        "UCS-Red": {
+            "success_rate": 0.74,
+            "avg_guesses": 4.216216216216216,
+            "std_guesses": 0.8643672207668288,
+            "avg_expanded": 5.216216216216216,
+            "avg_generated": 4.216216216216216,
+            "avg_frontier": 1,
+            "avg_time": 0.040876385327931995,
+            "mem_used_kb": 0
+        },
+        "UCS-Part": {
+            "success_rate": 0.7,
+            "avg_guesses": 4.285714285714286,
+            "std_guesses": 0.7448928946034066,
+            "avg_expanded": 5.285714285714286,
+            "avg_generated": 4.285714285714286,
+            "avg_frontier": 1,
+            "avg_time": 0.04134189401354108,
+            "mem_used_kb": 0
+        },
+        "UCS-Ent": {
+            "success_rate": 0.59,
+            "avg_guesses": 4.084745762711864,
+            "std_guesses": 0.7721027176890198,
+            "avg_expanded": 5.084745762711864,
+            "avg_generated": 4.084745762711864,
+            "avg_frontier": 1,
+            "avg_time": 0.04113466052685754,
+            "mem_used_kb": 16.0
+        },
+        "A*-Const-Log2": {
+            "success_rate": 0.86,
+            "avg_guesses": 4.488372093023256,
+            "std_guesses": 0.9547920752586629,
+            "avg_expanded": 5.488372093023256,
+            "avg_generated": 4.488372093023256,
+            "avg_frontier": 1,
+            "avg_time": 0.06364671851313392,
+            "mem_used_kb": 0
+        },
+        "A*-Red-Log2": {
+            "success_rate": 0.72,
+            "avg_guesses": 4.236111111111111,
+            "std_guesses": 0.7959944715562061,
+            "avg_expanded": 5.236111111111111,
+            "avg_generated": 4.236111111111111,
+            "avg_frontier": 1,
+            "avg_time": 0.06352070967356364,
+            "mem_used_kb": 32.0
+        },
+        "A*-Const-Part": {
+            "success_rate": 0.84,
+            "avg_guesses": 4.511904761904762,
+            "std_guesses": 0.8848667127054557,
+            "avg_expanded": 5.511904761904762,
+            "avg_generated": 4.511904761904762,
+            "avg_frontier": 1,
+            "avg_time": 0.06339949937093825,
+            "mem_used_kb": 16.0
+        },
+        "A*-Red-Part": {
+            "success_rate": 0.64,
+            "avg_guesses": 4.40625,
+            "std_guesses": 0.75,
+            "avg_expanded": 5.40625,
+            "avg_generated": 4.40625,
+            "avg_frontier": 1,
+            "avg_time": 0.06370538100600243,
+            "mem_used_kb": 16.0
+        }
+    },
+    "2": {
+        "BFS": {
+            "success_rate": 1.0,
+            "avg_guesses": 3.34,
+            "std_guesses": 0.6391281940932104,
+            "avg_expanded": 14.04,
+            "avg_generated": 25.17,
+            "avg_frontier": 13.13,
+            "avg_time": 0.08623452186584472,
+            "mem_used_kb": 3248.0
+        },
+        "DFS": {
+            "success_rate": 1.0,
+            "avg_guesses": 4.77,
+            "std_guesses": 1.0333333333333334,
+            "avg_expanded": 6.09,
+            "avg_generated": 9.28,
+            "avg_frontier": 5.38,
+            "avg_time": 0.08114884138107299,
+            "mem_used_kb": 32.0
+        },
+        "UCS-Red": {
+            "success_rate": 1.0,
+            "avg_guesses": 3.474747474747475,
+            "std_guesses": 0.594934987760785,
+            "avg_expanded": 14.282828282828282,
+            "avg_generated": 24.939393939393938,
+            "avg_frontier": 12.676767676767676,
+            "avg_time": 0.08431840424585824,
+            "mem_used_kb": 32.0
+        },
+        "UCS-Part": {
+            "success_rate": 1.0,
+            "avg_guesses": 3.49,
+            "std_guesses": 0.5945034427438948,
+            "avg_expanded": 16.32,
+            "avg_generated": 28.96,
+            "avg_frontier": 14.77,
+            "avg_time": 0.08488907337188721,
+            "mem_used_kb": 16.0
+        },
+        "UCS-Ent": {
+            "success_rate": 1.0,
+            "avg_guesses": 3.43,
+            "std_guesses": 0.5904116009919339,
+            "avg_expanded": 13.72,
+            "avg_generated": 23.28,
+            "avg_frontier": 12.02,
+            "avg_time": 0.08641112327575684,
+            "mem_used_kb": 32.0
+        },
+        "A*-Const-Log2": {
+            "success_rate": 1.0,
+            "avg_guesses": 3.96,
+            "std_guesses": 0.9311663154725406,
+            "avg_expanded": 5.7,
+            "avg_generated": 8.83,
+            "avg_frontier": 5.14,
+            "avg_time": 0.10267204284667969,
+            "mem_used_kb": 16.0
+        },
+        "A*-Red-Log2": {
+            "success_rate": 1.0,
+            "avg_guesses": 3.87,
+            "std_guesses": 0.786951668968895,
+            "avg_expanded": 6.15,
+            "avg_generated": 9.06,
+            "avg_frontier": 5.01,
+            "avg_time": 0.102828049659729,
+            "mem_used_kb": 16.0
+        },
+        "A*-Const-Part": {
+            "success_rate": 1.0,
+            "avg_guesses": 3.81,
+            "std_guesses": 0.7745314647572362,
+            "avg_expanded": 5.8,
+            "avg_generated": 8.97,
+            "avg_frontier": 5.17,
+            "avg_time": 0.10352052211761474,
+            "mem_used_kb": 0
+        },
+        "A*-Red-Part": {
+            "success_rate": 1.0,
+            "avg_guesses": 3.87,
+            "std_guesses": 0.8245598764789552,
+            "avg_expanded": 7.22,
+            "avg_generated": 10.77,
+            "avg_frontier": 5.7,
+            "avg_time": 0.10415566205978394,
+            "mem_used_kb": 0
+        }
+    },
+    "3": {
+        "BFS": {
+            "success_rate": 1.0,
+            "avg_guesses": 3.04,
+            "std_guesses": 0.49072199951508266,
+            "avg_expanded": 23.16,
+            "avg_generated": 62.19,
+            "avg_frontier": 41.03,
+            "avg_time": 0.13313252449035645,
+            "mem_used_kb": 3168.0
+        },
+        "DFS": {
+            "success_rate": 1.0,
+            "avg_guesses": 4.89,
+            "std_guesses": 1.0814785987692774,
+            "avg_expanded": 6.36,
+            "avg_generated": 13.75,
+            "avg_frontier": 9.68,
+            "avg_time": 0.12067992687225342,
+            "mem_used_kb": 32.0
+        },
+        "UCS-Red": {
+            "success_rate": 1.0,
+            "avg_guesses": 3.03,
+            "std_guesses": 0.5213618530523516,
+            "avg_expanded": 20.86,
+            "avg_generated": 54.7,
+            "avg_frontier": 35.84,
+            "avg_time": 0.13229772806167603,
+            "mem_used_kb": 32.0
+        }
+    },
+    "4": {
+        "BFS": {
+            "success_rate": 1.0,
+            "avg_guesses": 2.98,
+            "std_guesses": 0.31718458443950365,
+            "avg_expanded": 36.18,
+            "avg_generated": 130.72,
+            "avg_frontier": 96.54,
+            "avg_time": 0.19283560991287232,
+            "mem_used_kb": 3248.0
+        },
+        "DFS": {
+            "success_rate": 1.0,
+            "avg_guesses": 4.82,
+            "std_guesses": 1.0952606811147563,
+            "avg_expanded": 6.41,
+            "avg_generated": 17.39,
+            "avg_frontier": 13.37,
+            "avg_time": 0.16202082633972167,
+            "mem_used_kb": 16.0
+        },
+        "UCS-Red": {
+            "success_rate": 1.0,
+            "avg_guesses": 2.93,
+            "std_guesses": 0.3828389433765282,
+            "avg_expanded": 27.49,
+            "avg_generated": 95.41,
+            "avg_frontier": 69.92,
+            "avg_time": 0.19085896492004395,
+            "mem_used_kb": 48.0
+        },
+        "UCS-Part": {
+            "success_rate": 1.0,
+            "avg_guesses": 2.93,
+            "std_guesses": 0.2931886695621029,
+            "avg_expanded": 42.52,
+            "avg_generated": 149.7,
+            "avg_frontier": 109.18,
+            "avg_time": 0.19688308954238892,
+            "mem_used_kb": 0
+        },
+        "UCS-Ent": {
+            "success_rate": 1.0,
+            "avg_guesses": 2.91,
+            "std_guesses": 0.32082595426382343,
+            "avg_expanded": 31.18,
+            "avg_generated": 110.56,
+            "avg_frontier": 81.38,
+            "avg_time": 0.1907324767112732,
+            "mem_used_kb": 0
+        },
+        "A*-Const-Log2": {
+            "success_rate": 1.0,
+            "avg_guesses": 3.29,
+            "std_guesses": 0.7288430017583494,
+            "avg_expanded": 4.79,
+            "avg_generated": 12.75,
+            "avg_frontier": 9.96,
+            "avg_time": 0.1819884705543518,
+            "mem_used_kb": 0
+        },
+        "A*-Red-Log2": {
+            "success_rate": 1.0,
+            "avg_guesses": 3.21,
+            "std_guesses": 0.6243380332784315,
+            "avg_expanded": 5,
+            "avg_generated": 12.97,
+            "avg_frontier": 9.97,
+            "avg_time": 0.18211222648620606,
+            "mem_used_kb": 0
+        },
+        "A*-Const-Part": {
+            "success_rate": 1.0,
+            "avg_guesses": 3.32,
+            "std_guesses": 0.6010092521851234,
+            "avg_expanded": 5.72,
+            "avg_generated": 15.59,
+            "avg_frontier": 11.87,
+            "avg_time": 0.1826112127304077,
+            "mem_used_kb": 0
+        },
+        "A*-Red-Part": {
+            "success_rate": 1.0,
+            "avg_guesses": 3.22,
+            "std_guesses": 0.5787482137765049,
+            "avg_expanded": 5.62,
+            "avg_generated": 15.09,
+            "avg_frontier": 11.47,
+            "avg_time": 0.18301209211349487,
+            "mem_used_kb": 64.0
+        }
+    },
+    "5": {
+        "BFS": {
+            "success_rate": 1.0,
+            "avg_guesses": 2.86,
+            "std_guesses": 0.37658754867650873,
+            "avg_expanded": 45.32,
+            "avg_generated": 199.77,
+            "avg_frontier": 156.45,
+            "avg_time": 0.2509813141822815,
+            "mem_used_kb": 3888.0
+        },
+        "DFS": {
+            "success_rate": 1.0,
+            "avg_guesses": 4.99,
+            "std_guesses": 1.0683225783035437,
+            "avg_expanded": 6.66,
+            "avg_generated": 21.69,
+            "avg_frontier": 17.43,
+            "avg_time": 0.19798415660858154,
+            "mem_used_kb": 32.0
+        },
+        "UCS-Red": {
+            "success_rate": 1.0,
+            "avg_guesses": 2.82,
+            "std_guesses": 0.3861229196653691,
+            "avg_expanded": 31.49,
+            "avg_generated": 134.21,
+            "avg_frontier": 104.72,
+            "avg_time": 0.24417977094650267,
+            "mem_used_kb": 24512.0
+        },
+        "UCS-Part": {
+            "success_rate": 1.0,
+            "avg_guesses": 2.78,
+            "std_guesses": 0.41633319989322654,
+            "avg_expanded": 47.45,
+            "avg_generated": 207.38,
+            "avg_frontier": 161.93,
+            "avg_time": 0.24650610208511353,
+            "mem_used_kb": 32.0
+        },
+        "UCS-Ent": {
+            "success_rate": 1.0,
+            "avg_guesses": 2.83,
+            "std_guesses": 0.3775251680686369,
+            "avg_expanded": 32.93,
+            "avg_generated": 146.98,
+            "avg_frontier": 116.05,
+            "avg_time": 0.24409784078598024,
+            "mem_used_kb": 96.0
+        },
+        "A*-Const-Log2": {
+            "success_rate": 1.0,
+            "avg_guesses": 2.98,
+            "std_guesses": 0.5314360191257669,
+            "avg_expanded": 4.46,
+            "avg_generated": 14.07,
+            "avg_frontier": 11.61,
+            "avg_time": 0.21918652772903444,
+            "mem_used_kb": 16.0
+        },
+        "A*-Red-Log2": {
+            "success_rate": 1.0,
+            "avg_guesses": 3.13,
+            "std_guesses": 0.5972157622389639,
+            "avg_expanded": 5.05,
+            "avg_generated": 15.42,
+            "avg_frontier": 12.37,
+            "avg_time": 0.21884042263031006,
+            "mem_used_kb": 16.0
+        },
+        "A*-Const-Part": {
+            "success_rate": 1.0,
+            "avg_guesses": 2.98,
+            "std_guesses": 0.5120763831912405,
+            "avg_expanded": 5.52,
+            "avg_generated": 17.22,
+            "avg_frontier": 13.7,
+            "avg_time": 0.21891108989715577,
+            "mem_used_kb": 0
+        },
+        "A*-Red-Part": {
+            "success_rate": 1.0,
+            "avg_guesses": 3.01,
+            "std_guesses": 0.5411361037930132,
+            "avg_expanded": 5.56,
+            "avg_generated": 17.06,
+            "avg_frontier": 13.5,
+            "avg_time": 0.218830623626709,
+            "mem_used_kb": 0
+        }
+    },
+    "6": {
+        "BFS": {
+            "success_rate": 1.0,
+            "avg_guesses": 2.67,
+            "std_guesses": 0.47258156262526085,
+            "avg_expanded": 49.77,
+            "avg_generated": 265.68,
+            "avg_frontier": 217.91,
+            "avg_time": 0.32054140567779543,
+            "mem_used_kb": 4032.0
+        },
+        "DFS": {
+            "success_rate": 1.0,
+            "avg_guesses": 4.71,
+            "std_guesses": 1.0758600036597454,
+            "avg_expanded": 6.74,
+            "avg_generated": 24.71,
+            "avg_frontier": 20.34,
+            "avg_time": 0.2424521827697754,
+            "mem_used_kb": 0
+        },
+        "UCS-Red": {
+            "success_rate": 1.0,
+            "avg_guesses": 2.72,
+            "std_guesses": 0.451260859854213,
+            "avg_expanded": 39.36,
+            "avg_generated": 202.25,
+            "avg_frontier": 164.89,
+            "avg_time": 0.31416467905044554,
+            "mem_used_kb": 160.0
+        },
+        "UCS-Part": {
+            "success_rate": 1.0,
+            "avg_guesses": 2.69,
+            "std_guesses": 0.4648231987117317,
+            "avg_expanded": 63.55,
+            "avg_generated": 325.48,
+            "avg_frontier": 263.93,
+            "avg_time": 0.331338005065918,
+            "mem_used_kb": 17312.0
+        },
+        "UCS-Ent": {
+            "success_rate": 1.0,
+            "avg_guesses": 2.7,
+            "std_guesses": 0.4605661864718383,
+            "avg_expanded": 43.13,
+            "avg_generated": 226.85,
+            "avg_frontier": 185.72,
+            "avg_time": 0.31342133283615115,
+            "mem_used_kb": 24512.0
+        },
+        "A*-Const-Log2": {
+            "success_rate": 1.0,
+            "avg_guesses": 2.89,
+            "std_guesses": 0.5666666666666667,
+            "avg_expanded": 4.6,
+            "avg_generated": 15.78,
+            "avg_frontier": 13.18,
+            "avg_time": 0.262860803604126,
+            "mem_used_kb": 0
+        },
+        "A*-Red-Log2": {
+            "success_rate": 1.0,
+            "avg_guesses": 2.96,
+            "std_guesses": 0.5108914767444266,
+            "avg_expanded": 4.68,
+            "avg_generated": 16.07,
+            "avg_frontier": 13.39,
+            "avg_time": 0.2659241509437561,
+            "mem_used_kb": 16.0
+        },
+        "A*-Const-Part": {
+            "success_rate": 1.0,
+            "avg_guesses": 2.95,
+            "std_guesses": 0.5388914922357194,
+            "avg_expanded": 5.69,
+            "avg_generated": 19.64,
+            "avg_frontier": 15.95,
+            "avg_time": 0.2641838526725769,
+            "mem_used_kb": 16.0
+        },
+        "A*-Red-Part": {
+            "success_rate": 1.0,
+            "avg_guesses": 3,
+            "std_guesses": 0.6030226891555273,
+            "avg_expanded": 5.6,
+            "avg_generated": 19.25,
+            "avg_frontier": 15.65,
+            "avg_time": 0.2682269906997681,
+            "mem_used_kb": 1056.0
+        }
+    }
+}
